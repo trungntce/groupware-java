@@ -1,0 +1,346 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//ibatis.apache.org//DTD Mapper 3.0//EN" "http://ibatis.apache.org/dtd/ibatis-3-mapper.dtd">
+
+<mapper namespace="songtranslation">
+
+    <insert id="InsertTran" parameterType="kr.co.hs.translation.dto.TranslationDTO">
+        INSERT INTO translation
+        ( lang_cd
+        , emp_cd
+        , dept_change_history_id
+        , dept_cd
+        , position_cd
+        , translation_status
+        , title
+        , contents
+        , reg_dt
+        , translation_score
+        , select_yn
+        , use_yn)
+        VALUES ( #{langCd}
+               , #{empCd}
+               , (select dept_change_history_id
+                  from dept_change_history
+                  where dept_cd = #{deptCd}
+                    and dept_version = (select max(dept_version) from dept_change_history where dept_cd = #{deptCd}))
+               , #{deptCd}
+               , #{positionCd}
+               , 0
+               , #{title}
+               , #{contents}
+               , now()
+               , #{translationScore}
+               , #{selectYn}
+               , #{useYn})
+        <selectKey resultType="Integer" keyProperty="translationId">
+            SELECT LAST_INSERT_ID()
+        </selectKey>
+    </insert>
+
+
+    <select id="getTranId" parameterType="String" resultType="int">
+        select translation_id
+        from translation
+        order by translation_id desc limit 1
+    </select>
+
+    <insert id="InsertWorkTran" parameterType="kr.co.hs.work.dto.WorktranslationDTO">
+
+        insert into work_translation(work_id, translation_id)
+        values (#{workId}, #{translationId})
+
+    </insert>
+
+    <insert id="InsertDayWorkTran" parameterType="kr.co.hs.work.dto.WorktranslationDTO">
+
+        insert into day_work_translation(day_work_id, translation_id)
+        values (#{dayWorkId}, #{translationId})
+
+    </insert>
+
+    <insert id="InsertDayWorkCmtTran" parameterType="kr.co.hs.work.dto.WorktranslationDTO">
+
+        insert into day_work_comment_translation(day_work_comment_id, translation_id)
+        values (#{dayWorkCommentId}, #{translationId})
+
+    </insert>
+
+    <insert id="InsertBoardTrans" parameterType="kr.co.hs.work.dto.WorktranslationDTO">
+
+        insert into board_translation(board_id, translation_id)
+        values (#{boardId}, #{translationId})
+
+    </insert>
+
+    <insert id="InsertDayProjectItemTrans" parameterType="kr.co.hs.project.dto.DayProjectItemTranslationDTO">
+        insert into day_project_item_translation(dpi_id, translation_id)
+        values (#{dpiId}, #{translationId})
+    </insert>
+
+    <insert id="InsertDayProjectTrans" parameterType="kr.co.hs.project.dto.DayProjectTranslationDTO">
+        insert into day_project_translation(dp_id, translation_id)
+        values (#{dpId}, #{translationId})
+    </insert>
+
+    <insert id="InsertProjectTrans" parameterType="kr.co.hs.project.dto.ProjectTranslationDTO">
+        insert into project_translation(pj_id, translation_id)
+        values (#{pjId}, #{translationId})
+    </insert>
+
+
+    <select id="getTranKork" parameterType="hashmap" resultType="kr.co.hs.translation.dto.TranslationDTO">
+        select t.*,
+               lang.lang_name,
+               GET_EMP_NAME(t.emp_cd, #{langCd})                          as emp_name,
+               GET_DEPT_HISTORY_NAME(t.dept_change_history_id, #{langCd}) as his_dept_name,
+               GET_DEPT_NAME(t.dept_cd, #{langCd})                        as dept_name,
+               GET_POSITION_NAME(t.position_cd, #{langCd})                as po_name,
+               ROW_NUMBER() OVER (ORDER BY t.translation_id asc) AS ROWNUM
+        from work_translation wt
+                 join translation t on wt.translation_id = t.translation_id
+                 join lang on t.lang_cd = lang.lang_cd
+        where wt.work_id = #{workId}
+          and t.use_yn = 'Y'
+    </select>
+
+    <select id="getTransBoard" parameterType="hashmap" resultType="kr.co.hs.translation.dto.TranslationDTO">
+        select t.*,
+               lang.lang_name,
+               GET_EMP_NAME(t.emp_cd, #{langCd})                          as emp_name,
+               GET_DEPT_HISTORY_NAME(t.dept_change_history_id, #{langCd}) as his_dept_name,
+               GET_DEPT_NAME(t.dept_cd, #{langCd})                        as dept_name,
+               GET_POSITION_NAME(t.position_cd, #{langCd})                as po_name
+        from board_translation wt
+                 join translation t on wt.translation_id = t.translation_id
+                 join lang on t.lang_cd = lang.lang_cd
+        where wt.board_id = #{boardId}
+          and t.use_yn = 'Y'
+    </select>
+
+    <select id="getTranDayProjectItem" parameterType="hashmap" resultType="kr.co.hs.translation.dto.TranslationDTO">
+        select t.*,
+               lang.lang_name,
+               GET_EMP_NAME(t.emp_cd, #{langCd})                          as emp_name,
+               GET_DEPT_HISTORY_NAME(t.dept_change_history_id, #{langCd}) as his_dept_name,
+               GET_DEPT_NAME(t.dept_cd, #{langCd})                        as dept_name,
+               GET_POSITION_NAME(t.position_cd, #{langCd})                as po_name,
+               ROW_NUMBER() OVER (ORDER BY t.translation_id asc) AS ROWNUM
+        from day_project_item_translation dpit
+                 join translation t on dpit.translation_id = t.translation_id
+                 join lang on t.lang_cd = lang.lang_cd
+        where dpit.dpi_id = #{dpiId}
+          and t.use_yn = 'Y'
+    </select>
+
+    <select id="getTranDayProject" parameterType="hashmap" resultType="kr.co.hs.translation.dto.TranslationDTO">
+        select t.*,
+               lang.lang_name,
+               GET_EMP_NAME(t.emp_cd, #{langCd})                          as emp_name,
+               GET_DEPT_HISTORY_NAME(t.dept_change_history_id, #{langCd}) as his_dept_name,
+               GET_DEPT_NAME(t.dept_cd, #{langCd})                        as dept_name,
+               GET_POSITION_NAME(t.position_cd, #{langCd})                as po_name,
+               ROW_NUMBER() OVER (ORDER BY t.translation_id asc) AS ROWNUM
+        from day_project_translation dpt
+                 join translation t on dpt.translation_id = t.translation_id
+                 join lang on t.lang_cd = lang.lang_cd
+        where dpt.dp_id = #{dpId}
+          and t.use_yn = 'Y'
+    </select>
+
+    <select id="getTranProject" parameterType="hashmap" resultType="kr.co.hs.translation.dto.TranslationDTO">
+        select t.*,
+               lang.lang_name,
+               GET_EMP_NAME(t.emp_cd, #{langCd})                          as emp_name,
+               GET_DEPT_HISTORY_NAME(t.dept_change_history_id, #{langCd}) as his_dept_name,
+               GET_DEPT_NAME(t.dept_cd, #{langCd})                        as dept_name,
+               GET_POSITION_NAME(t.position_cd, #{langCd})                as po_name,
+               ROW_NUMBER() OVER (ORDER BY t.translation_id asc) AS ROWNUM
+        from project_translation pt
+                 join translation t on pt.translation_id = t.translation_id
+                 join lang on t.lang_cd = lang.lang_cd
+        where pt.pj_id = #{pjId}
+          and t.use_yn = 'Y'
+    </select>
+
+    <select id="getLocationTran" parameterType="String" resultType="kr.co.hs.emp.dto.EmpDTO">
+        SELECT emp_cd
+             , phone
+             , location_tran
+             , location_date
+             , GET_DEPT_LEVEL_NAME(DEPT_CD, #{langCd})   AS DEPT_NAME
+             , GET_POSITION_NAME(position_cd, #{langCd}) AS position_name
+             , GET_EMP_NAME(emp_cd, #{langCd})           AS emp_name
+             , admin_yn
+             , GET_LOCATION_STATUS(cc.c_code_name, #{langCd})    as LOCATION_STATUS
+             , CASE
+                   when location_status = 1
+                       then "background: #7ab2d9;"
+                   when location_status = 2
+                       then "background: #657ef9;"
+                   when location_status = 3
+                       then "background:#f78fa8;"
+                   when location_status = 4
+                       then "background:#f53030;"
+                   when location_status = 5
+                       then "background:#f53030;"
+            end as style_str_open
+        FROM emp
+                 JOIN c_code cc ON cc.c_code_value = emp.location_status AND cc.c_code = 'locationstatus'
+        WHERE translation_yn = 'Y'
+          AND emp.use_yn = 'Y'
+          AND EMP_PARENT_CD IS NULL
+        ORDER BY location_date desc
+    </select>
+
+    <insert id="themTranLoca" parameterType="kr.co.hs.translation.dto.Translation_location">
+        INSERT INTO translation_location
+        ( emp_cd
+        , dept_change_history_id
+        , dept_cd
+        , position_cd
+        , work_status
+        , location
+        , note
+        , location_status
+        , create_date, use_yn)
+        VALUES ( #{empCd}
+               , #{deptChangeHstoryId}
+               , #{deptCd}
+               , #{positionCd}
+               , #{workStatus}
+               , #{location}
+               , #{note}
+               , #{locationStatus}
+               , now(), 'Y')
+
+    </insert>
+
+    <update id="xoalocationTran" parameterType="hashmap">
+        UPDATE translation_location
+        SET use_yn='N'
+        where ${param}
+    </update>
+
+    <update id="updateTranlocation" parameterType="kr.co.hs.emp.dto.EmpDTO">
+        UPDATE emp
+        SET location_tran=#{locationTran},
+            location_date=NOW(),
+            location_status = #{locationStatus}
+        WHERE emp_cd = #{empCd}
+    </update>
+
+    <select id="getDayWorkTranKork" parameterType="hashmap" resultType="kr.co.hs.translation.dto.TranslationDTO">
+        select t.*,
+               @ROWNUM := @ROWNUM + 1 AS ROWNUM,
+        lang.lang_name,
+        GET_EMP_NAME(t.emp_cd, #{langCd}) as emp_name,
+            GET_DEPT_HISTORY_NAME(t.dept_change_history_id,
+               #{langCd}) as his_dept_name,
+            GET_DEPT_NAME(t.dept_cd,
+               #{langCd}) as dept_name,
+            GET_POSITION_NAME(t.position_cd,
+               #{langCd}) as po_name
+        from day_work_translation wt
+            join translation t
+        on wt.translation_id = t.translation_id
+            join lang on t.lang_cd = lang.lang_cd, (SELECT @ROWNUM := 0) TEMP
+        where wt.day_work_id = #{dayWorkId} and t.use_yn='Y'
+    </select>
+
+    <select id="getCommentTrans" parameterType="hashmap" resultType="kr.co.hs.translation.dto.TranslationDTO">
+        select t.*,
+               lang.lang_name,
+               GET_EMP_NAME(t.emp_cd, #{langCd})                          as emp_name,
+               GET_DEPT_HISTORY_NAME(t.dept_change_history_id, #{langCd}) as his_dept_name,
+               GET_DEPT_NAME(t.dept_cd, #{langCd})                        as dept_name,
+               GET_POSITION_NAME(t.position_cd, #{langCd})                as po_name
+        from day_work_comment_translation wt
+                 join translation t on wt.translation_id = t.translation_id
+                 join lang on t.lang_cd = lang.lang_cd
+        where wt.day_work_comment_id = #{dayWorkCommentId}
+          and t.use_yn = 'Y'
+        Order by wt.translation_id desc
+    </select>
+
+    <select id="getTransByID" parameterType="hashmap" resultType="kr.co.hs.translation.dto.TranslationDTO">
+        select *,
+               GET_DEPT_NAME(dept_change_history_id, #{langCd}) as history_dept_name,
+               GET_EMP_NAME(emp_cd, #{langCd})                  as emp_name,
+               GET_DEPT_NAME(dept_cd, #{langCd})                as dept_name,
+               GET_POSITION_NAME(position_cd, #{langCd})        as position_name
+        from translation
+        where use_yn = 'Y'
+          and translation_id = #{translationId}
+    </select>
+
+    <update id="updateTranslation" parameterType="kr.co.hs.translation.dto.TranslationDTO">
+        UPDATE translation
+        SET emp_cd                 = #{empCd}
+          , dept_change_history_id = (select dept_change_history_id
+                                      from dept_change_history
+                                      where dept_cd = #{deptCd}
+                                        and dept_version = (select max(dept_version)
+                                                            from dept_change_history
+                                                            where dept_cd = #{deptCd}))
+          , dept_cd                = #{deptCd}
+          , position_cd            = #{positionCd}
+          , title                  = #{title}
+          , contents               = #{contents}
+        WHERE translation_id = #{translationId}
+    </update>
+
+    <update id="updateStatusTrans" parameterType="hashmap">
+        update translation
+        set translation_status=#{trangthai}
+        where translation_id = #{id}
+    </update>
+
+    <select id="checkIdBelongCmtTrans" parameterType="hashmap" resultType="Integer">
+        SELECT COUNT(*) NUMBER
+        FROM DAY_WORK_COMMENT_TRANSLATION
+        WHERE TRANSLATION_ID = #{translationId}
+    </select>
+
+    <select id="getListTransByDayWorkId" parameterType="hashmap"
+            resultType="kr.co.hs.translation.dto.TranslationDTO">
+        SELECT DWT.TRANSLATION_ID, GET_EMP_NAME(TR.EMP_CD, #{langCd}) AS EMP_NAME, TR.TITLE, TR.CONTENTS
+        FROM DAY_WORK_TRANSLATION DWT
+                 JOIN TRANSLATION TR ON TR.TRANSLATION_ID = DWT.TRANSLATION_ID
+        WHERE DWT.DAY_WORK_ID = #{dayWorkId}
+    </select>
+
+    <select id="getListTransByApprovalId" parameterType="hashmap"
+            resultType="kr.co.hs.translation.dto.TranslationDTO">
+        SELECT
+                TL.*
+                , GET_EMP_NAME(TL.EMP_CD, #{langCd}) AS EMP_NAME
+            FROM
+                APPROVAL_TRANSLATION AP
+            LEFT JOIN
+                TRANSLATION TL
+                ON
+                    AP.TRANSLATION_ID = TL.TRANSLATION_ID
+            WHERE APPROVAL_ID = #{approvalId}
+                AND TL.USE_YN = 'Y'
+            ORDER BY
+                TL.REG_DT DESC;
+    </select>
+
+    <select id="getListTransCommentByApprovalId" parameterType="hashmap"
+            resultType="kr.co.hs.translation.dto.TranslationDTO">
+        SELECT
+            *
+            , GET_EMP_NAME(TL.EMP_CD,  #{langCd}) AS EMP_NAME
+        FROM
+            APPROVAL_COMMENT_TRANSLATION ACP
+        LEFT JOIN
+            TRANSLATION TL
+            ON
+                ACP.TRANSLATION_ID = TL.TRANSLATION_ID
+        WHERE ACP.APPROVAL_ID = #{approvalId}
+                AND TL.USE_YN = 'Y'
+        ORDER BY
+            ACP.SIGN_LINE_ID, TL.REG_DT DESC;
+    </select>
+
+</mapper>

@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//ibatis.apache.org//DTD Mapper 3.0//EN" "http://ibatis.apache.org/dtd/ibatis-3-mapper.dtd">
+
+<mapper namespace="ApprovalFile">
+
+    <select id="selectFileByApprovalId" parameterType="kr.co.hs.approval.dto.ApprovalFileSearchDTO" resultType="kr.co.hs.files.dto.FilesDTO">
+        SELECT
+            F.FILE_ID
+            , F.DEPT_CHANGE_HISTORY_ID
+            , F.DEPT_CD
+            , F.POSITION_CD
+            , F.EMP_CD
+            , F.FILE_TYPE
+            , F.FILE_PATH
+            , F.FILE_NAME
+            , F.FILE_HASH_NAME
+            , F.FILE_EXT
+            , F.FILE_SIZE
+            , F.REG_DT
+            , F.FILE_STATUS
+        FROM
+            APPROVAL_FILE AF
+        INNER JOIN FILES F ON AF.FILE_ID = F.FILE_ID
+        WHERE
+            AF.APPROVAL_ID = #{approvalId}
+    </select>
+
+    <insert id="insertOne" parameterType="kr.co.hs.approval.dto.ApprovalFileDTO">
+        INSERT INTO APPROVAL_FILE (APPROVAL_ID, FILE_ID)
+        VALUES (#{approvalId}, #{fileId})
+    </insert>
+
+    <delete id="deleteByApprovalIdAndCheckFileIds" parameterType="kr.co.hs.approval.dto.ApprovalFileSearchDTO">
+        DELETE FROM APPROVAL_FILE
+        WHERE APPROVAL_ID = #{approvalId}
+        AND FILE_ID NOT IN
+        <foreach item="item" index="index" collection="fileIds" open="(" separator="," close=")">
+            ${item}
+        </foreach>
+    </delete>
+
+    <delete id="deleteByApprovalId" parameterType="kr.co.hs.approval.dto.ApprovalFileSearchDTO">
+        DELETE FROM APPROVAL_FILE
+        WHERE APPROVAL_ID = #{approvalId}
+    </delete>
+</mapper>

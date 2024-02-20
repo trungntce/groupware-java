@@ -1,0 +1,532 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//ibatis.apache.org//DTD Mapper 3.0//EN" "http://ibatis.apache.org/dtd/ibatis-3-mapper.dtd">
+
+<mapper namespace="DeptBoard">
+
+    <select id="selectCount" parameterType="Integer" resultType="int">
+        <![CDATA[
+			SELECT COUNT(*)
+            FROM (
+                SELECT BOARD_ID
+                ,           BOARD_TYPE_CD
+				,           LANG_CD
+				,           DEPT_CHANGE_HISTORY_ID
+				,           DEPT_CD
+				, 		    GET_DEPT_LEVEL_NAME(DEPT_CD, #{langCd}) AS DEPT_NAME
+                ,			NOTI_YN
+				,           EMP_CD
+				, 	    	GET_EMP_NAME(EMP_CD, #{langCd}) AS EMP_NAME
+                ,           POSITION_CD
+                ,    		GET_POSITION_NAME(POSITION_CD, #{langCd}) AS POSITION_NAME
+
+                ,           TITLE
+                ,           CONTENTS
+                ,           REG_DT
+                ,           USE_YN
+                ,           NOTI_START_DT
+                ,           NOTI_END_DT
+                , 			GET_DEPT_MAIN(DEPT_CD) AS DEPT_MAIN
+                ,GET_TRANSLATION_STATUS_BOARD(board_id,#{langCd}) AS translation_status
+                FROM BOARD BRD
+                WHERE
+                BOARD_TYPE_CD = 'dept'
+             ) RESULT
+             WHERE 1=1
+               AND USE_YN = 'Y' and NOTI_YN='N'
+               AND DEPT_MAIN IN ( select dept_cd
+                from ( WITH RECURSIVE p AS (
+                SELECT dept_cd, dept_parent_cd, dept_level
+                FROM dept
+                WHERE dept_cd = ( SELECT DEPT_CD FROM EMP WHERE EMP_CD = #{empCd})
+                UNION
+                SELECT c.dept_cd, c.dept_parent_cd, c.dept_level
+                FROM dept AS c, p
+                WHERE p.dept_parent_cd = c.dept_cd)
+                SELECT dept_cd, dept_level
+                FROM p
+                ) a where dept_level = 3)
+		]]>
+        <if test="type != null &amp;&amp; type !='' &amp;&amp; keyword != null &amp;&amp; keyword !=''">
+            AND ${type} LIKE CONCAT('%',#{keyword},'%' )
+        </if>
+        <if test="dateSql != null &amp;&amp; dateSql !=''">
+            <![CDATA[  ${dateSql}  ]]>
+        </if>
+        <if test="deptSearch != null &amp;&amp; deptSearch !=''">
+            <![CDATA[    AND DEPT_MAIN LIKE CONCAT('%',#{deptSearch},'%' )  ]]>
+        </if>
+        <if test="translationStatus != null &amp;&amp; translationStatus !=''">
+            <![CDATA[  AND GET_TRANSLATION_STATUS_BOARD(board_id,#{langCd}) LIKE CONCAT('%',#{translationStatus},'%' )  ]]>
+        </if>
+        <if test="inputSearchSql != null &amp;&amp; inputSearchSql !=''">
+            <![CDATA[  ${inputSearchSql}  ]]>
+        </if>
+    </select>
+
+    <select id="selectCountAdmin" parameterType="Integer" resultType="int">
+        <![CDATA[
+			SELECT COUNT(*)
+        FROM (
+                SELECT BOARD_ID
+                ,           BOARD_TYPE_CD
+				,           LANG_CD
+				,           DEPT_CHANGE_HISTORY_ID
+				,           DEPT_CD
+				, 		    GET_DEPT_LEVEL_NAME(DEPT_CD, #{langCd}) AS DEPT_NAME
+                ,			NOTI_YN
+				,           EMP_CD
+				, 	    	GET_EMP_NAME(EMP_CD, #{langCd}) AS EMP_NAME
+                ,           POSITION_CD
+                ,    		GET_POSITION_NAME(POSITION_CD, #{langCd}) AS POSITION_NAME
+
+                ,           TITLE
+                ,           CONTENTS
+                ,           REG_DT
+                ,           USE_YN
+                ,           NOTI_START_DT
+                ,           NOTI_END_DT
+                , 			GET_DEPT_MAIN(DEPT_CD) AS DEPT_MAIN
+                ,GET_TRANSLATION_STATUS_BOARD(board_id,#{langCd}) AS translation_status
+                FROM BOARD BRD
+                WHERE
+                BOARD_TYPE_CD = 'dept'
+             ) RESULT
+             WHERE 1=1
+               AND USE_YN = 'Y' and NOTI_YN='N'
+               AND DEPT_MAIN in ( select dept_cd
+                from ( WITH RECURSIVE p AS (
+                SELECT dept_cd, dept_parent_cd, dept_level
+                FROM dept
+                WHERE dept_cd = 1
+                UNION
+                SELECT c.dept_cd, c.dept_parent_cd, c.dept_level
+                FROM dept AS c,  p
+                WHERE p.dept_cd = c.dept_parent_cd)
+                SELECT dept_cd, dept_level
+                FROM p
+                ) a
+                where dept_level = 3)
+		]]>
+        <if test="type != null &amp;&amp; type !='' &amp;&amp; keyword != null &amp;&amp; keyword !=''">
+            AND ${type} LIKE CONCAT('%',#{keyword},'%' )
+        </if>
+        <if test="dateSql != null &amp;&amp; dateSql !=''">
+            <![CDATA[  ${dateSql}  ]]>
+        </if>
+        <if test="deptSearch != null &amp;&amp; deptSearch !=''">
+            <![CDATA[    AND DEPT_MAIN LIKE CONCAT('%',#{deptSearch},'%' )  ]]>
+        </if>
+        <if test="translationStatus != null &amp;&amp; translationStatus !=''">
+            <![CDATA[  AND GET_TRANSLATION_STATUS_BOARD(board_id,#{langCd}) LIKE CONCAT('%',#{translationStatus},'%' )  ]]>
+        </if>
+        <if test="inputSearchSql != null &amp;&amp; inputSearchSql !=''">
+            <![CDATA[  ${inputSearchSql}  ]]>
+        </if>
+    </select>
+
+    <select id="selectListTestAdmin" parameterType="kr.co.hs.board.dto.BoardControlDTO" resultType="kr.co.hs.board.dto.BoardControlDTO">
+        <![CDATA[
+            select * from(
+			SELECT *, ROW_NUMBER() OVER (ORDER BY reg_dt asc) AS ROWNUM
+        FROM (
+                SELECT      BOARD_ID
+                ,           BOARD_TYPE_CD
+				,           LANG_CD
+				,           DEPT_CHANGE_HISTORY_ID
+				,           DEPT_CD
+				, 		    GET_DEPT_LEVEL_NAME(DEPT_CD, #{langCd}) AS DEPT_NAME
+                ,			NOTI_YN
+				,           EMP_CD
+				, 	    	GET_EMP_NAME(EMP_CD, #{langCd}) AS EMP_NAME
+                ,           POSITION_CD
+                ,    		GET_POSITION_NAME(POSITION_CD, #{langCd}) AS POSITION_NAME
+
+                ,           TITLE
+                ,           CONTENTS
+                ,           REG_DT
+                ,           USE_YN
+                ,           NOTI_START_DT
+                ,           NOTI_END_DT
+                , 			GET_DEPT_MAIN(DEPT_CD) AS DEPT_MAIN
+                ,GET_TRANSLATION_STATUS_BOARD(board_id,#{langCd}) AS translation_status
+
+                FROM BOARD BRD Where USE_YN = 'Y'
+                ORDER BY NOTI_YN DESC
+             ) RESULT
+             WHERE 1=1 AND USE_YN = 'Y' and NOTI_YN='N'
+             AND BOARD_TYPE_CD = 'dept'
+             AND DEPT_MAIN in ( select dept_cd
+                from ( WITH RECURSIVE p AS (
+                SELECT dept_cd, dept_parent_cd, dept_level
+                FROM dept
+                WHERE dept_cd = 1
+                UNION
+                SELECT c.dept_cd, c.dept_parent_cd, c.dept_level
+                FROM dept AS c,  p
+                WHERE p.dept_cd = c.dept_parent_cd)
+                SELECT dept_cd, dept_level
+                FROM p
+                ) a
+                where dept_level = 3)
+		]]>
+        <if test="type != null &amp;&amp; type !='' &amp;&amp; keyword != null &amp;&amp; keyword !=''">
+            AND ${type} LIKE CONCAT('%',#{keyword},'%' )
+        </if>
+        <if test="dateSql != null &amp;&amp; dateSql !=''">
+            <![CDATA[  ${dateSql}  ]]>
+        </if>
+        <if test="deptSearch != null &amp;&amp; deptSearch !=''">
+            <![CDATA[    AND DEPT_MAIN LIKE CONCAT('%',#{deptSearch},'%' )  ]]>
+        </if>
+        <if test="translationStatus != null &amp;&amp; translationStatus !=''">
+            <![CDATA[  AND GET_TRANSLATION_STATUS_BOARD(board_id,#{langCd}) LIKE CONCAT('%',#{translationStatus},'%' )  ]]>
+        </if>
+        <if test="inputSearchSql != null &amp;&amp; inputSearchSql !=''">
+            <![CDATA[  ${inputSearchSql}  ]]>
+        </if>
+        <![CDATA[
+                     ORDER BY ${str}
+                    LIMIT #{recordsPerPage} OFFSET #{startRow}
+                 ) RESULTT
+                WHERE 1=1
+        ]]>
+    </select>
+
+    <select id="selectCountTranslation" parameterType="Integer" resultType="int">
+        <![CDATA[
+			SELECT COUNT(*)
+        FROM (
+                SELECT BOARD_ID
+                ,           BOARD_TYPE_CD
+				,           LANG_CD
+				,           DEPT_CHANGE_HISTORY_ID
+				,           DEPT_CD
+				, 		    GET_DEPT_LEVEL_NAME(DEPT_CD, #{langCd}) AS DEPT_NAME
+                ,			NOTI_YN
+				,           EMP_CD
+				, 	    	GET_EMP_NAME(EMP_CD, #{langCd}) AS EMP_NAME
+                ,           POSITION_CD
+                ,    		GET_POSITION_NAME(POSITION_CD, #{langCd}) AS POSITION_NAME
+
+                ,           TITLE
+                ,           CONTENTS
+                ,           REG_DT
+                ,           USE_YN
+                ,           NOTI_START_DT
+                ,           NOTI_END_DT
+                , 			GET_DEPT_MAIN(DEPT_CD) AS DEPT_MAIN
+                ,GET_TRANSLATION_STATUS_BOARD(board_id,#{langCd}) AS translation_status
+                FROM BOARD BRD
+                WHERE
+                BOARD_TYPE_CD = 'dept'
+             ) RESULT
+             WHERE 1=1
+               AND USE_YN = 'Y' and NOTI_YN='N'
+               AND DEPT_MAIN in ( select dept_cd
+                from ( WITH RECURSIVE p AS (
+                SELECT dept_cd, dept_parent_cd, dept_level
+                FROM dept
+                WHERE dept_cd = GET_EMP_DEPT_COMPANY(#{empCd})
+                UNION
+                SELECT c.dept_cd, c.dept_parent_cd, c.dept_level
+                FROM dept AS c,  p
+                WHERE p.dept_cd = c.dept_parent_cd)
+                SELECT dept_cd, dept_level
+                FROM p
+                ) a
+                where dept_level = 3)
+		]]>
+        <if test="type != null &amp;&amp; type !='' &amp;&amp; keyword != null &amp;&amp; keyword !=''">
+            AND ${type} LIKE CONCAT('%',#{keyword},'%' )
+        </if>
+        <if test="dateSql != null &amp;&amp; dateSql !=''">
+            <![CDATA[  ${dateSql}  ]]>
+        </if>
+        <if test="deptSearch != null &amp;&amp; deptSearch !=''">
+            <![CDATA[    AND DEPT_MAIN LIKE CONCAT('%',#{deptSearch},'%' )  ]]>
+        </if>
+        <if test="translationStatus != null &amp;&amp; translationStatus !=''">
+            <![CDATA[  AND GET_TRANSLATION_STATUS_BOARD(board_id,#{langCd}) LIKE CONCAT('%',#{translationStatus},'%' )  ]]>
+        </if>
+        <if test="inputSearchSql != null &amp;&amp; inputSearchSql !=''">
+            <![CDATA[  ${inputSearchSql}  ]]>
+        </if>
+    </select>
+
+    <select id="selectListTestTranslation" parameterType="kr.co.hs.board.dto.BoardControlDTO" resultType="kr.co.hs.board.dto.BoardControlDTO">
+        <![CDATA[
+            select * from(
+			SELECT *, ROW_NUMBER() OVER (ORDER BY reg_dt asc) AS ROWNUM
+        FROM (
+                SELECT      BOARD_ID
+                ,           BOARD_TYPE_CD
+				,           LANG_CD
+				,           DEPT_CHANGE_HISTORY_ID
+				,           DEPT_CD
+				, 		    GET_DEPT_LEVEL_NAME(DEPT_CD, #{langCd}) AS DEPT_NAME
+                ,			NOTI_YN
+				,           EMP_CD
+				, 	    	GET_EMP_NAME(EMP_CD, #{langCd}) AS EMP_NAME
+                ,           POSITION_CD
+                ,    		GET_POSITION_NAME(POSITION_CD, #{langCd}) AS POSITION_NAME
+
+                ,           TITLE
+                ,           CONTENTS
+                ,           REG_DT
+                ,           USE_YN
+                ,           NOTI_START_DT
+                ,           NOTI_END_DT
+                , 			GET_DEPT_MAIN(DEPT_CD) AS DEPT_MAIN
+                ,GET_TRANSLATION_STATUS_BOARD(board_id,#{langCd}) AS translation_status
+
+                FROM BOARD BRD Where USE_YN = 'Y'
+                ORDER BY NOTI_YN DESC
+             ) RESULT
+             WHERE 1=1 AND USE_YN = 'Y' and NOTI_YN='N'
+             AND BOARD_TYPE_CD = 'dept'
+             AND DEPT_MAIN in ( select dept_cd
+                from ( WITH RECURSIVE p AS (
+                SELECT dept_cd, dept_parent_cd, dept_level
+                FROM dept
+                WHERE dept_cd = GET_EMP_DEPT_COMPANY(#{empCd})
+                UNION
+                SELECT c.dept_cd, c.dept_parent_cd, c.dept_level
+                FROM dept AS c,  p
+                WHERE p.dept_cd = c.dept_parent_cd)
+                SELECT dept_cd, dept_level
+                FROM p
+                ) a
+                where dept_level = 3)
+		]]>
+        <if test="type != null &amp;&amp; type !='' &amp;&amp; keyword != null &amp;&amp; keyword !=''">
+            AND ${type} LIKE CONCAT('%',#{keyword},'%' )
+        </if>
+        <if test="dateSql != null &amp;&amp; dateSql !=''">
+            <![CDATA[  ${dateSql}  ]]>
+        </if>
+        <if test="deptSearch != null &amp;&amp; deptSearch !=''">
+            <![CDATA[    AND DEPT_MAIN LIKE CONCAT('%',#{deptSearch},'%' )  ]]>
+        </if>
+        <if test="translationStatus != null &amp;&amp; translationStatus !=''">
+            <![CDATA[  AND GET_TRANSLATION_STATUS_BOARD(board_id,#{langCd}) LIKE CONCAT('%',#{translationStatus},'%' )  ]]>
+        </if>
+        <if test="inputSearchSql != null &amp;&amp; inputSearchSql !=''">
+            <![CDATA[  ${inputSearchSql}  ]]>
+        </if>
+        <![CDATA[
+                     ORDER BY ${str}
+                    LIMIT #{recordsPerPage} OFFSET #{startRow}
+                 ) RESULTT
+                WHERE 1=1
+        ]]>
+    </select>
+
+    <select id="selectListTest" parameterType="kr.co.hs.board.dto.BoardControlDTO" resultType="kr.co.hs.board.dto.BoardControlDTO">
+        <![CDATA[
+            select * from(
+			SELECT *, ROW_NUMBER() OVER (ORDER BY reg_dt asc) AS ROWNUM
+        FROM (
+                SELECT      BOARD_ID
+                ,           BOARD_TYPE_CD
+				,           LANG_CD
+				,           DEPT_CHANGE_HISTORY_ID
+				,           DEPT_CD
+				, 		    GET_DEPT_LEVEL_NAME(DEPT_CD, #{langCd}) AS DEPT_NAME
+                ,			NOTI_YN
+				,           EMP_CD
+				, 	    	GET_EMP_NAME(EMP_CD, #{langCd}) AS EMP_NAME
+                ,           POSITION_CD
+                ,    		GET_POSITION_NAME(POSITION_CD, #{langCd}) AS POSITION_NAME
+
+                ,           TITLE
+                ,           CONTENTS
+                ,           REG_DT
+                ,           USE_YN
+                ,           NOTI_START_DT
+                ,           NOTI_END_DT
+                , 			GET_DEPT_MAIN(DEPT_CD) AS DEPT_MAIN
+                ,GET_TRANSLATION_STATUS_BOARD(board_id,#{langCd}) AS translation_status
+
+
+                FROM BOARD BRD Where USE_YN = 'Y'
+                ORDER BY NOTI_YN DESC
+             ) RESULT
+             WHERE 1=1 AND USE_YN = 'Y' and NOTI_YN='N'
+             AND BOARD_TYPE_CD = 'dept'
+             AND DEPT_MAIN IN ( select dept_cd
+                from ( WITH RECURSIVE p AS (
+                SELECT dept_cd, dept_parent_cd, dept_level
+                FROM dept
+                WHERE dept_cd = ( SELECT DEPT_CD FROM EMP WHERE EMP_CD = #{empCd})
+                UNION
+                SELECT c.dept_cd, c.dept_parent_cd, c.dept_level
+                FROM dept AS c, p
+                WHERE p.dept_parent_cd = c.dept_cd)
+                SELECT dept_cd, dept_level
+                FROM p
+                ) a where dept_level = 3)
+		]]>
+        <if test="type != null &amp;&amp; type !='' &amp;&amp; keyword != null &amp;&amp; keyword !=''">
+            AND ${type} LIKE CONCAT('%',#{keyword},'%' )
+        </if>
+        <if test="dateSql != null &amp;&amp; dateSql !=''">
+            <![CDATA[  ${dateSql}  ]]>
+        </if>
+        <if test="deptSearch != null &amp;&amp; deptSearch !=''">
+            <![CDATA[    AND DEPT_MAIN LIKE CONCAT('%',#{deptSearch},'%' )  ]]>
+        </if>
+        <if test="translationStatus != null &amp;&amp; translationStatus !=''">
+            <![CDATA[  AND GET_TRANSLATION_STATUS_BOARD(board_id,#{langCd}) LIKE CONCAT('%',#{translationStatus},'%' )  ]]>
+        </if>
+        <if test="inputSearchSql != null &amp;&amp; inputSearchSql !=''">
+            <![CDATA[  ${inputSearchSql}  ]]>
+        </if>
+        <![CDATA[
+                     ORDER BY ${str}
+                    LIMIT #{recordsPerPage} OFFSET #{startRow}
+                 ) RESULTT
+                WHERE 1=1
+        ]]>
+    </select>
+
+    <select id="selectBoardTypeList" parameterType="String" resultType="kr.co.hs.board.dto.BoardControlDTO">
+        <![CDATA[
+        SELECT *
+            FROM (
+                SELECT
+                   BOARD_TYPE_CD
+                  ,BOARD_KIND_CD
+                FROM BOARD_TYPE BT)
+            RESULT WHERE 1=1
+        ]]>
+    </select>
+
+    <select id="selectLangList" parameterType="String" resultType="kr.co.hs.board.dto.BoardControlDTO">
+        <![CDATA[
+        SELECT LANG_CD
+                ,   LANG_NAME
+                FROM LANG LA
+        ]]>
+    </select>
+
+    <insert id="insertOne" parameterType="kr.co.hs.board.dto.BoardControlDTO">
+        <![CDATA[
+        INSERT INTO BOARD(
+                                   BOARD_TYPE_CD
+                          ,        LANG_CD
+                          ,        DEPT_CHANGE_HISTORY_ID
+                          ,        DEPT_CD
+                          ,        POSITION_CD
+                          ,        EMP_CD
+                          ,        TITLE
+                          ,        CONTENTS
+                          ,        REG_DT
+                          ,        NOTI_YN
+                          ,        NOTI_START_DT
+                          ,        NOTI_END_DT
+                          ,        USE_YN
+        ) VALUES (
+                           'dept'
+                  ,        #{langCd}
+                  ,        (select dept_change_history_id from dept_change_history where dept_cd = #{deptCd}
+          and dept_version = (select max(dept_version) from dept_change_history where dept_cd = #{deptCd}))
+                  ,        #{deptCd}
+                  ,        #{positionCd}
+                  ,        #{empCd}
+                  ,        #{title}
+                  ,        #{contents}
+                  ,        now()
+                  ,        #{notiYn}
+                  ,        #{notiStartDt}
+                  ,        #{notiEndDt}
+                  ,        'Y')
+        ]]>
+    </insert>
+
+    <select id="selectBoardView" resultType="kr.co.hs.board.dto.BoardControlDTO">
+        <![CDATA[
+                SELECT
+                            BOARD_TYPE_CD
+                ,           BOARD_ID
+				,           LANG_CD
+				,           DEPT_CHANGE_HISTORY_ID
+				,           DEPT_CD
+				, 		    GET_DEPT_LEVEL_NAME(DEPT_CD, #{langCd}) AS DEPT_NAME
+
+				,           EMP_CD
+				, 	    	GET_EMP_NAME(EMP_CD, #{langCd}) AS EMP_NAME
+                ,           POSITION_CD
+                ,    		GET_POSITION_NAME(POSITION_CD, #{langCd}) AS POSITION_NAME
+
+                ,           TITLE
+                ,           CONTENTS
+                ,           REG_DT
+                ,           USE_YN
+                ,           NOTI_START_DT
+                ,           NOTI_END_DT
+                ,           NOTI_YN
+                ,           (SELECT LANG_NAME FROM LANG A WHERE A.LANG_CD = B.LANG_CD) AS LANG_NAME
+
+
+                FROM BOARD B
+             WHERE BOARD_ID = #{boardId}
+		]]>
+    </select>
+
+    <update id="updateOne" parameterType="kr.co.hs.board.dto.BoardControlDTO">
+        <![CDATA[
+        UPDATE BOARD SET
+                        LANG_CD = #{langCd}
+                    ,   TITLE = #{title}
+                    ,   NOTI_START_DT = #{notiStartDt}
+                    ,   NOTI_END_DT = #{notiEndDt}
+                    ,   CONTENTS = #{contents}
+                    ,   NOTI_YN = #{notiYn}
+
+        WHERE BOARD_ID = #{boardId}
+        ]]>
+    </update>
+
+    <select id="selectListMain" parameterType="hashmap" resultType="kr.co.hs.board.dto.BoardControlDTO">
+        <![CDATA[
+			select board_id, get_emp_name(emp_cd, #{langCd}) as emp_name, title, reg_dt from board
+		where dept_cd in (select dept_cd
+		from
+		(WITH RECURSIVE p AS (
+			SELECT dept_cd,dept_parent_cd,dept_level
+            FROM dept
+            WHERE dept_cd = (SELECT DEPT_CD FROM EMP WHERE EMP_CD = #{empCd})
+			UNION
+			SELECT c.dept_cd,c.dept_parent_cd,c.dept_level
+            FROM dept AS c, p
+            WHERE p.dept_parent_cd = c.dept_cd)
+		SELECT dept_cd FROM p order by dept_level asc
+		) a) and use_yn = 'y' order by board_id desc
+		limit 0,5
+		]]>
+    </select>
+    <select id="selectTopByNoticeYn" parameterType="String" resultType="kr.co.hs.board.dto.BoardControlDTO">
+        <![CDATA[
+        SELECT case when #{langCd}='ko' then '공지' when #{langCd}='en' then 'notice' ELSE 'Thông báo' END AS notice
+             ,			    BOARD_ID
+             ,           BOARD_TYPE_CD
+             ,           LANG_CD
+             ,           DEPT_CHANGE_HISTORY_ID
+             ,           DEPT_CD
+             , 		    	GET_DEPT_LEVEL_NAME(DEPT_CD, #{langCd}) AS DEPT_NAME
+             ,				NOTI_YN
+             ,           EMP_CD
+             , 	    		GET_EMP_NAME(EMP_CD, #{langCd}) AS EMP_NAME
+             ,           POSITION_CD
+             ,    			GET_POSITION_NAME(POSITION_CD, #{langCd}) AS POSITION_NAME
+             ,           TITLE
+             ,           CONTENTS
+             ,           REG_DT
+             ,           USE_YN
+             ,           NOTI_START_DT
+             ,           NOTI_END_DT
+             ,				GET_TRANSLATION_STATUS_BOARD(board_id,#{langCd}) AS translation_status
+        FROM board WHERE board_type_cd='dept' AND noti_yn='Y' AND use_yn='Y' ORDER BY board_id desc
+        ]]>
+    </select>
+</mapper>

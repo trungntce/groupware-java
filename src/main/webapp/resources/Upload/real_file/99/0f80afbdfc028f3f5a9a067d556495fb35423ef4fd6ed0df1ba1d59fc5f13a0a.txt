@@ -1,0 +1,32 @@
+USE [chaydan]
+GO
+/****** Object:  Trigger [dbo].[noibang_hanghoa1]    Script Date: 07/19/2018 11:01:27 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+-- =============================================
+-- Author:		<Author,,Name>
+-- Create date: <Create Date,,>
+-- Description:	<Description,,>
+-- =============================================
+
+ALTER TRIGGER [dbo].[noibang_hanghoa1]
+on [dbo].[HangHoa]
+for update
+as
+begin
+declare @toncapnhat int = (select TonThucTe from inserted)
+declare @IdHangHoa int = (select Id from inserted)
+declare @Thang int = MONTH(GETDATE());
+declare @Nam int = YEAR(GETDATE());
+declare @IdRe int = (select Id from ReportThang where IdHangHoa=@IdHangHoa and Thang=@Thang and Nam=@Nam)
+
+if @IdRe >0
+	update ReportThang set LichSuTon=@toncapnhat where Id= @IdRe
+else
+	insert into ReportThang(IdHangHoa,LichSuTon,Thang,Nam) values(@IdHangHoa,@toncapnhat,@Thang,@Nam)
+
+
+
+end

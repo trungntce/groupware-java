@@ -1,0 +1,201 @@
+.center {
+    text-align: center;
+}
+
+.cursor-pointer {
+    cursor: pointer;
+}
+
+.cursor-default {
+    cursor: default;
+}
+
+.portrait-center {
+    display: flex;
+    align-items: center;
+}
+
+.font-default {
+    font-size: 11px;
+    font-weight: 600;
+}
+
+/* ===== Button ===== */
+.btn-load {
+    font-size: 12px;
+    font-weight: 600;
+    color: #FFFFFF;
+    background-color: #6d966d;
+    height: 22px;
+    padding: 0 5px;
+}
+
+.btn-load:hover {
+    color: #FFFFFF;
+    background-color: #91b491;
+}
+
+.btn-exchange {
+    font-size: 12px;
+    font-weight: 600;
+    color: #FFFFFF;
+    background-color: #c79121;
+    height: 22px;
+    padding: 0 5px;
+}
+
+.btn-exchange:hover {
+    color: #FFFFFF;
+    background-color: #dca940;
+}
+
+.btn-delete {
+    font-size: 12px;
+    font-weight: 600;
+    color: #ffffff;
+    background-color: #ec3838;
+    height: 25px;
+    padding: 0 5px;
+}
+
+.table-striped td{
+    vertical-align: inherit;
+}
+
+.btn-delete:hover {
+    color: #FFFFFF;
+    background-color: #f15e5e;
+}
+
+/* ====== RADIO =======*/
+.container-radio {
+  display: block;
+  position: relative;
+  padding-left: 35px;
+  margin-bottom: 12px;
+  cursor: pointer;
+  font-size: 1.2em;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+/* Hide the browser's default radio button */
+.container-radio input {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+}
+
+/* Create a custom radio button */
+.checkmark {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 25px;
+  width: 25px;
+  background-color: #eee;
+  border-radius: 50%;
+}
+
+/* On mouse-over, add a grey background color */
+.container-radio:hover input ~ .checkmark {
+  background-color: #ccc;
+}
+
+/* When the radio button is checked, add a blue background */
+.container-radio input:checked ~ .checkmark {
+  background-color: #2196F3;
+}
+
+/* Create the indicator (the dot/circle - hidden when not checked) */
+.checkmark:after {
+  content: "";
+  position: absolute;
+  display: none;
+}
+
+/* Show the indicator (dot/circle) when checked */
+.container-radio input:checked ~ .checkmark:after {
+  display: block;
+}
+
+/* Style the indicator (dot/circle) */
+.container-radio .checkmark:after {
+    top: 9px;
+    left: 9px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: white;
+}
+.wrapper-signature {
+  position: relative;
+  width: 100%;
+  height: 50vh;
+  -moz-user-select: none;
+  -webkit-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+.signature-pad {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: white;
+  cursor: url('../dist/pen.png'), auto;
+}
+.sign_img{
+    margin-left: 2px;
+    border: 1px solid #d5dbe0 !important;
+}
+
+.cke-tbl-sign{
+    border-spacing: 6px 1px;
+    border-collapse: separate;
+    border: none;
+}
+
+.cke-tbl-sign tr:nth-child(3){
+    height: 70px;
+}
+.cke-tbl-sign th
+, .cke-tbl-sign td{
+    border: 1px solid #000;
+    vertical-align : middle;
+    text-align: center;
+}
+.td-approval-translation {
+    vertical-align: middle !important;
+    text-align: center;
+}
+.width-10 {
+    width: 10% !important;
+}
+.width-15 {
+    width: 15% !important;
+}
+.width-20 {
+    width: 20% !important;
+}
+.width-25 {
+    width: 25% !important;
+}
+.width-30 {
+    width: 30% !important;
+}
+.width-50 {
+    width: 50% !important;
+}
+.width-55 {
+    width: 55%;
+}
+.width-60 {
+    width: 60% !important;
+}
+@media only screen and (max-width: 767px){
+
+}

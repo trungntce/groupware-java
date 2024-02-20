@@ -1,0 +1,46 @@
+﻿#secAddNew .form-control {
+    width: 94%;
+}
+
+.field-status-ok {
+    margin-left: 12%;
+}
+
+.info-add {
+    margin-top: 2%;
+}
+
+.field-status-ng {
+    display: none;
+}
+
+.status-check {
+    margin-bottom: 9%;
+    margin-left: 3%;
+}
+
+.table tbody tr:hover td, .table tbody tr:hover th {
+    background-color: #fff !important;
+    color: black !important;
+}
+
+.add {
+    float: left;
+    margin-left: 5px;
+}
+
+#Test {
+    width: 180px;
+}
+
+.sw {
+    width: 150px;
+}
+
+.os {
+    width: 250px;
+}
+
+.modal-content {
+    margin-top: -44px !important;
+}

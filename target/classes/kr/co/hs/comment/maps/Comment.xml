@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//ibatis.apache.org//DTD Mapper 3.0//EN" "http://ibatis.apache.org/dtd/ibatis-3-mapper.dtd">
+
+<mapper namespace="Comment">
+    <select id="selectCommentList" parameterType="hashmap" resultType="kr.co.hs.comment.dto.CommentDTO">
+        <![CDATA[
+        SELECT *
+        FROM (
+                 SELECT @ROWNUM := @ROWNUM + 1 AS ROWNUM
+                  , DWC.DAY_WORK_COMMENT_ID
+                  , DWC.DAY_WORK_ID
+                  , DWC.EMP_CD
+                  , (SELECT LANG_NAME FROM LANG WHERE LANG_CD = DWC.LANG_CD) AS LANG_NAME
+                  , GET_EMP_NAME(EMP_CD, #{langCd}) AS EMP_NAME
+                  , DWC.DEPT_CHANGE_HISTORY_ID
+                  , DWC.DEPT_CD
+                  , DWC.POSITION_CD
+                  , DWC.LANG_CD
+                  , DWC.CONTENTS
+                  , DWC.REG_DT
+                  , DWC.USE_YN
+                 FROM DAY_WORK_COMMENT DWC, (SELECT @ROWNUM :=0) TEMP
+                 WHERE DWC.DAY_WORK_ID = #{dayWorkId} AND DWC.USE_YN = 'Y'
+             ) RESULT
+        ]]>
+    </select>
+
+    <select id="getCommentById" parameterType="hashmap" resultType="kr.co.hs.comment.dto.CommentDTO">
+        SELECT * FROM DAY_WORK_COMMENT WHERE DAY_WORK_COMMENT_ID = #{dayWorkCommentId}
+    </select>
+
+    <update id="updateComment" parameterType="kr.co.hs.comment.dto.CommentDTO">
+        UPDATE DAY_WORK_COMMENT
+        SET
+            emp_cd = #{empCd}
+          ,dept_change_history_id = (select dept_change_history_id from dept_change_history where dept_cd = #{deptCd}
+                                                                                              and dept_version = (select max(dept_version) from dept_change_history where dept_cd = #{deptCd}))
+          ,dept_cd = #{deptCd}
+          ,position_cd = #{positionCd}
+          ,contents = #{contents}
+          ,lang_cd = #{langCd}
+        WHERE DAY_WORK_COMMENT_ID = #{dayWorkCommentId}
+    </update>
+
+    <select id="getlistDayWorkCmtByID" parameterType="hashmap" resultType="kr.co.hs.comment.dto.CommentDTO">
+        select *,
+        GET_DEPT_NAME(dept_change_history_id, #{langCd}) as history_dept_name,
+        GET_EMP_NAME(emp_cd, #{langCd})                  as emp_name,
+        GET_DEPT_NAME(dept_cd, #{langCd})                as dept_name,
+        GET_POSITION_NAME(position_cd, #{langCd})        as position_name
+        from day_work_comment
+        where use_yn = 'Y'
+        and day_work_comment_id  = #{dayWorkCommentId}
+    </select>
+
+    <insert id="insertComment" parameterType="kr.co.hs.comment.dto.CommentDTO">
+        INSERT INTO day_work_comment
+        ( day_work_id
+        , lang_cd
+        , emp_cd
+        , dept_change_history_id
+        , dept_cd
+        , position_cd
+        , contents
+        , reg_dt
+        , use_yn)
+        VALUES (
+            #{dayWorkId}
+        , #{langCd}
+        , #{empCd}
+        , (select dept_change_history_id from dept_change_history where dept_cd = #{deptCd}
+          and dept_version = (select max(dept_version) from dept_change_history where dept_cd = #{deptCd}))
+        , #{deptCd}
+        , #{positionCd}
+        , #{contents}
+        , now()
+        , #{useYn})
+    </insert>
+</mapper>

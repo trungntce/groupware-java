@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//ibatis.apache.org//DTD Mapper 3.0//EN" "http://ibatis.apache.org/dtd/ibatis-3-mapper.dtd">
+
+<mapper namespace="ApprovalTranslation">
+    <insert id="insertOne" parameterType="kr.co.hs.approval.dto.ApprovalTranslationDTO">
+        INSERT INTO APPROVAL_TRANSLATION
+            (
+                APPROVAL_ID
+                , TRANSLATION_ID
+            )
+        VALUES
+            (
+                #{approvalId}
+                , #{translationId}
+            )
+    </insert>
+
+    <select id="selectDataTranslateLastedByIdApproval" parameterType="kr.co.hs.approval.dto.ApprovalTranslationDTO" resultType="kr.co.hs.translation.dto.TranslationDTO">
+        SELECT TRANSLATION_ID,
+        LANG_CD,
+        EMP_CD,
+        DEPT_CHANGE_HISTORY_ID,
+        DEPT_CD,
+        POSITION_CD,
+        TRANSLATION_STATUS,
+        TITLE,
+        CONTENTS,
+        REG_DT,
+        TRANSLATION_SCORE,
+        SELECT_YN,
+        USE_YN,
+        GET_EMP_NAME(EMP_CD, #{langCd}) AS EMP_NAME
+        FROM
+        TRANSLATION
+        WHERE TRANSLATION_ID = (
+        SELECT MAX(TRANSLATION_ID)
+        FROM APPROVAL_TRANSLATION
+        WHERE APPROVAL_ID = #{approvalId}
+        )
+    </select>
+
+    <select id="selectDataTranslateByIdApproval" parameterType="kr.co.hs.approval.dto.ApprovalTranslationDTO" resultType="kr.co.hs.translation.dto.TranslationDTO">
+        SELECT
+            T.TRANSLATION_ID
+            , T.LANG_CD
+            , T.EMP_CD
+            , T.DEPT_CHANGE_HISTORY_ID
+            , T.DEPT_CD
+            , T.POSITION_CD
+            , T.TRANSLATION_STATUS
+            , T.TITLE
+            , T.CONTENTS
+            , T.REG_DT
+            , T.TRANSLATION_SCORE
+            , T.SELECT_YN
+            , T.USE_YN
+            , GET_EMP_NAME(T.EMP_CD, #{langCd}) AS EMP_NAME
+        FROM TRANSLATION T
+        INNER JOIN APPROVAL_TRANSLATION AT ON AT.TRANSLATION_ID = T.TRANSLATION_ID
+        WHERE AT.APPROVAL_ID = #{approvalId}
+    </select>
+</mapper>
+

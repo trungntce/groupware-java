@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//ibatis.apache.org//DTD Mapper 3.0//EN" "http://ibatis.apache.org/dtd/ibatis-3-mapper.dtd">
+
+<mapper namespace="ApprovalCommentTranslation">
+    <insert id="insertOne" parameterType="kr.co.hs.approval.dto.ApprovalTranslationDTO">
+        INSERT INTO APPROVAL_COMMENT_TRANSLATION
+        (
+        SIGN_LINE_ID
+        , TRANSLATION_ID
+        , APPROVAL_ID
+        )
+        VALUES
+        (
+        #{signLineId}
+        , #{translationId}
+        , #{approvalId}
+        )
+    </insert>
+</mapper>
+

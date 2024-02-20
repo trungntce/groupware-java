@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//ibatis.apache.org//DTD Mapper 3.0//EN" "http://ibatis.apache.org/dtd/ibatis-3-mapper.dtd">
+
+<mapper namespace="ApprovalSignLine">
+
+    <select id="selectList" parameterType="kr.co.hs.approval.dto.ApprovalSignLineSearchDTO" resultType="kr.co.hs.approval.dto.ApprovalSignLineDTO">
+        SELECT
+            AGL.SIGN_LINE_ID
+            , AGL.APPROVAL_ID
+            , AGL.APPROVAL_TYPE
+            , AGL.APPROVAL_ROLE
+            , AGL.STEP
+            , AGL.APPROVAL_STATUS
+            , AGL.EMP_ID
+            , AGL.EMP_CD
+            , AGL.MEMO
+            , AGL.CREATE_DATE
+            , AGL.APPROVAL_DATE
+            , AGL.CREATE_ID
+            , AST.SIGNATURE_IMAGE_PATH
+            , GET_POSITION_NAME(E.POSITION_CD, #{langCd}) AS POSITION_NAME
+            , GET_EMP_NAME(E.EMP_CD, #{langCd}) AS EMP_NAME
+            , GET_DEPT_NAME(D.DEPT_CD,#{langCd}) as DEPT_NAME
+            , GET_CODE_NAME(CC.C_CODE_ID, #{langCd}) as APPROVAL_ROLE_NAME
+            , GET_CODE_NAME(CC1.C_CODE_ID, #{langCd}) as APPROVAL_STATUS_NAME
+        FROM APPROVAL_SIGN_LINE AGL
+        INNER JOIN EMP E ON AGL.EMP_CD = E.EMP_CD
+        INNER JOIN DEPT D ON E.DEPT_CD = D.DEPT_CD
+        INNER JOIN C_CODE CC ON AGL.APPROVAL_ROLE = CC.C_CODE_VALUE AND CC.C_CODE = 'approval_role'
+        INNER JOIN C_CODE CC1 ON AGL.APPROVAL_STATUS = CC1.C_CODE_VALUE AND CC1.C_CODE = 'approval_status'
+        LEFT JOIN APPROVAL_SETTINGS AST ON AGL.EMP_ID = AST.CREATE_ID AND AST.USE_YN = 'Y'
+        WHERE 1
+        <if test="approvalId != null &amp;&amp; approvalId !=''"> AND APPROVAL_ID = #{approvalId} </if>
+        <if test="approvalRole != null &amp;&amp; approvalRole !=''"> AND APPROVAL_ROLE = #{approvalRole} </if>
+        <if test="empCd != null &amp;&amp; empCd !=''"> AND EMP_CD = #{empCd} </if>
+        <choose>
+            <when test="lstApprovalRole != null &amp;&amp; lstApprovalRole.size() > 0">
+                AND APPROVAL_ROLE IN
+                <foreach item="item" index="index" collection="lstApprovalRole" open="(" separator="," close=")">
+                    #{item}
+                </foreach>
+            </when>
+        </choose>
+        <choose>
+            <when test="listStatus != null &amp;&amp; listStatus.size() > 0">
+                AND APPROVAL_STATUS IN
+                <foreach item="item" index="index" collection="listStatus" open="(" separator="," close=")">
+                    #{item}
+                </foreach>
+            </when>
+        </choose>
+        <choose>
+            <when test="orderByColumn != null &amp;&amp; orderByColumn != ''"> ORDER BY ${orderByColumn} ${orderByType} </when>
+            <otherwise>  ORDER BY AGL.SIGN_LINE_ID ASC </otherwise>
+        </choose>
+
+    </select>
+    <select id="selectOne" parameterType="kr.co.hs.approval.dto.ApprovalSignLineSearchDTO" resultType="kr.co.hs.approval.dto.ApprovalSignLineDTO">
+        SELECT
+        SIGN_LINE_ID
+        , APPROVAL_ID
+        , APPROVAL_TYPE
+        , APPROVAL_ROLE
+        , STEP
+        , APPROVAL_STATUS
+        , EMP_ID
+        , EMP_CD
+        , MEMO
+        , CREATE_DATE
+        , APPROVAL_DATE
+        , CREATE_ID
+        FROM
+        APPROVAL_SIGN_LINE
+        WHERE
+        SIGN_LINE_ID = #{signLineId}
+    </select>
+
+    <insert id="insertOne" parameterType="kr.co.hs.approval.dto.ApprovalSignLineDTO" >
+        INSERT INTO APPROVAL_SIGN_LINE
+        (
+            APPROVAL_ID
+            , APPROVAL_TYPE
+            , APPROVAL_ROLE
+            , STEP
+            , APPROVAL_STATUS
+            , EMP_ID
+            , EMP_CD
+            , MEMO
+            , CREATE_DATE
+            , APPROVAL_DATE
+            , CREATE_ID
+        )
+        VALUES
+        (
+            #{approvalId}
+            , #{approvalType}
+            , #{approvalRole}
+            , #{step}
+            , #{approvalStatus}
+            , #{empId}
+            , #{empCd}
+            , #{memo}
+            , NOW()
+            , #{approvalDate}
+            , #{createId}
+        )
+    </insert>
+
+    <update id="updateOne" parameterType="kr.co.hs.approval.dto.ApprovalSignLineDTO">
+        UPDATE
+            APPROVAL_SIGN_LINE
+        SET
+            APPROVAL_TYPE = #{approvalType}
+            , STEP = #{step}
+            , APPROVAL_STATUS = #{approvalStatus}
+            , APPROVAL_ROLE = #{approvalRole}
+            , EMP_ID = #{empId}
+            , EMP_CD = #{empCd}
+            , MEMO = #{memo}
+            , CREATE_DATE = #{createDate}
+            , APPROVAL_DATE = #{approvalDate}
+            , CREATE_ID = #{createId}
+        WHERE
+            SIGN_LINE_ID = #{signLineId}
+    </update>
+
+    <update id="sign" parameterType="kr.co.hs.approval.dto.ApprovalSignLineDTO">
+        UPDATE
+            APPROVAL_SIGN_LINE
+        SET
+            APPROVAL_TYPE = #{approvalType}
+            , APPROVAL_STATUS = #{approvalStatus}
+            , MEMO = #{memo}
+            , APPROVAL_DATE = NOW()
+        WHERE
+            APPROVAL_ID = #{approvalId}
+            AND EMP_CD = #{empCd}
+    </update>
+
+    <delete id="deleteByApprovalId" parameterType="kr.co.hs.approval.dto.ApprovalSignLineSearchDTO">
+        DELETE FROM APPROVAL_SIGN_LINE
+        WHERE APPROVAL_ID = #{approvalId}
+    </delete>
+</mapper>

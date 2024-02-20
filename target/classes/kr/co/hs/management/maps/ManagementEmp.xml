@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//ibatis.apache.org//DTD Mapper 3.0//EN" "http://ibatis.apache.org/dtd/ibatis-3-mapper.dtd">
+
+<mapper namespace="ManagementEmp">
+
+    <!-- 직원 리스트 카운트. -->
+    <select id="selectCount" parameterType="kr.co.hs.management.dto.ManagementEmpSearchDTO" resultType="int">
+        <![CDATA[
+			SELECT COUNT(*)
+			FROM (
+			     SELECT
+                    *
+                    FROM EMP
+			        WHERE 1=1
+        ]]>
+                    <if test="type != null &amp;&amp; type !='' &amp;&amp; keyword != null &amp;&amp; keyword !=''">
+                        AND ${type} LIKE CONCAT('%',#{keyword},'%' )
+                    </if>
+                    <if test="gubun != null &amp;&amp; gubun != '' &amp;&amp; gubun != 999999">
+                        AND GUBUN = #{gubun}
+                    </if>
+                    <if test="status != null &amp;&amp; status !='' &amp;&amp; status != 999999">
+                        AND STATUS = #{status}
+                    </if>
+                    <if test="useYn != null &amp;&amp; useYn !='' &amp;&amp; useYn != '999999'">
+                        AND USE_YN = #{useYn}
+                    </if>
+        <![CDATA[
+			) RESULT
+            WHERE 1=1
+		]]>
+    </select>
+
+    <!-- 직원 리스트 가져오기. -->
+    <select id="selectEmpList" parameterType="kr.co.hs.management.dto.ManagementEmpSearchDTO" resultType="kr.co.hs.management.dto.ManagementEmpDTO">
+        <![CDATA[
+            SELECT *
+            FROM (
+                     SELECT      ROW_NUMBER() OVER(ORDER BY EMP_CD) ROWNUM
+                        ,       EMP_CD
+                        , 		EMP_PARENT_CD
+                        , 		DEPT_CD
+                        , 		GET_DEPT_LEVEL_NAME(DEPT_CD, #{langCd}) AS DEPT_NAME
+                        , 		POSITION_CD
+                        , 		GET_POSITION_NAME(POSITION_CD, #{langCd}) AS POSITION_NAME
+                        , 		SELECT_LANG_CD
+                        , 		EMP_ID
+                        , 		EMP_PW
+                        , 		GET_EMP_NAME(EMP_CD, #{langCd}) AS EMP_NAME
+                        , 		ADDR
+                        , 		ADDR_DETAIL
+                        , 		ZIP_CD
+                        , 		TEL
+                        , 		PHONE
+                        , 		ID_NUM
+                        , 		BIRTH_DAY
+                        , 		MAIL
+                        , 		ZALO_ID
+                        , 		TRANSLATION_YN
+                        , 		ADMIN_YN
+                        , 		GUBUN
+                        , 		STATUS
+                        ,       DATE_FORMAT(ENTER_DATE, '%Y-%m-%d') AS ENTER_DATE
+                        ,       MEMO
+                        , 		USE_YN
+                     FROM EMP
+                     WHERE 1=1
+        ]]>
+                    <if test="type != null &amp;&amp; type !='' &amp;&amp; keyword != null &amp;&amp; keyword !=''">
+                        AND ${type} LIKE CONCAT('%',#{keyword},'%' )
+                    </if>
+                    <if test="gubun != null &amp;&amp; gubun != '' &amp;&amp; gubun != 999999">
+                        AND GUBUN = #{gubun}
+                    </if>
+                    <if test="status != null &amp;&amp; status !='' &amp;&amp; status != 999999">
+                        AND STATUS = #{status}
+                    </if>
+                    <if test="useYn != null &amp;&amp; useYn !='' &amp;&amp; useYn != '999999'">
+                        AND USE_YN = #{useYn}
+                    </if>
+        <![CDATA[
+                     ORDER BY ROWNUM DESC
+                         LIMIT #{start}, #{limit}
+                 ) RESULT
+                WHERE 1=1
+        ]]>
+    </select>
+
+    <!-- 직원 상세정보 가져오기. -->
+    <select id="selectEmpView" parameterType="kr.co.hs.management.dto.ManagementEmpSearchDTO" resultType="kr.co.hs.management.dto.ManagementEmpDTO">
+        <![CDATA[
+            SELECT  EMP_CD
+            , 		EMP_PARENT_CD
+            , 		DEPT_CD
+            , 		GET_DEPT_LEVEL_NAME(DEPT_CD, #{langCd}) AS DEPT_NAME
+            , 		POSITION_CD
+            , 		GET_POSITION_NAME(POSITION_CD, #{langCd}) AS POSITION_NAME
+            , 		EMP_ID
+            , 		EMP_PW
+            , 		EMP_NAME
+            , 		ADDR
+            , 		ADDR_DETAIL
+            , 		ZIP_CD
+            , 		TEL
+            , 		PHONE
+            , 		ID_NUM
+            , 		BIRTH_DAY
+            , 		MAIL
+            , 		ZALO_ID
+            , 		TRANSLATION_YN
+            , 		ADMIN_YN
+            , 		GUBUN
+            , 		STATUS
+            ,       DATE_FORMAT(ENTER_DATE, '%Y-%m-%d') AS ENTER_DATE
+            ,       MEMO
+            , 		USE_YN
+            FROM EMP
+            WHERE EMP_CD = #{empCd}
+        ]]>
+    </select>
+
+    <!-- 아이디 중복 확인. -->
+    <select id="selectEmpIdCount" parameterType="kr.co.hs.management.dto.ManagementEmpDTO" resultType="int">
+        <![CDATA[
+        SELECT  COUNT(*)
+        FROM EMP
+        WHERE EMP_ID = #{empId}
+        ]]>
+    </select>
+
+    <insert id="insertOne" parameterType="kr.co.hs.management.dto.ManagementEmpDTO">
+        <![CDATA[
+        INSERT INTO EMP(
+                                DEPT_CD
+                       ,        POSITION_CD
+                       ,        EMP_ID
+                       ,        EMP_PW
+                       ,        EMP_NAME
+                       ,        ADDR
+                       ,        ADDR_DETAIL
+                       ,        ZIP_CD
+                       ,        TEL
+                       ,        PHONE
+                       ,        ID_NUM
+                       ,        BIRTH_DAY
+                       ,        MAIL
+                       ,        ZALO_ID
+                       ,        TRANSLATION_YN
+                       ,        ADMIN_YN
+                       ,        GUBUN
+                       ,        STATUS
+                       ,        ENTER_DATE
+                       ,        MEMO
+                       ,        USE_YN
+        ) VALUES (
+                     #{deptCd}
+                 , #{positionCd}
+                 , #{empId}
+                 , #{empPw}
+                 , #{empName}
+                 , #{addr}
+                 , #{addrDetail}
+                 , #{zipCd}
+                 , #{tel}
+                 , #{phone}
+                 , #{idNum}
+                 , #{birthDay}
+                 , #{mail}
+                 , #{zaloId}
+                 , #{translationYn}
+                 , #{adminYn}
+                 , #{gubun}
+                 , #{status}
+                 , #{enterDate}
+                 , #{memo}
+                 , #{useYn}
+         )
+		]]>
+    </insert>
+
+    <update id="updateOne" parameterType="kr.co.hs.management.dto.ManagementEmpDTO">
+		<![CDATA[
+        UPDATE EMP SET
+                              DEPT_CD = #{deptCd}
+                     ,        POSITION_CD = #{positionCd}
+                     ,        ADDR = #{addr}
+                     ,        ADDR_DETAIL = #{addrDetail}
+                     ,        ZIP_CD = #{zipCd}
+                     ,        TEL = #{tel}
+                     ,        PHONE = #{phone}
+                     ,        ID_NUM = #{idNum}
+                     ,        BIRTH_DAY = #{birthDay}
+                     ,        MAIL = #{mail}
+                     ,        ZALO_ID = #{zaloId}
+                     ,        TRANSLATION_YN = #{translationYn}
+                     ,        ADMIN_YN = #{adminYn}
+                     ,        GUBUN = #{gubun}
+                     ,        STATUS = #{status}
+                     ,        ENTER_DATE = #{enterDate}
+                     ,        MEMO = #{memo}
+                     ,        USE_YN = #{useYn}
+        WHERE EMP_CD = #{empCd}
+        ]]>
+	</update>
+</mapper>

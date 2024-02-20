@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//ibatis.apache.org//DTD Mapper 3.0//EN" "http://ibatis.apache.org/dtd/ibatis-3-mapper.dtd">
+
+<mapper namespace="Position">
+
+    <select id="selectPositionList" parameterType="String" resultType="kr.co.hs.position.dto.PositionDTO">
+        SELECT
+            POSITION_CD
+             ,	GET_POSITION_NAME(POSITION_CD, #{langCd}) AS POSITION_NAME,position_level
+        FROM POSITION
+        WHERE USE_YN = 'Y'
+        ORDER BY POSITION_LEVEL
+    </select>
+
+    <update id="deletePo" parameterType="hashmap">
+        update position set use_yn = 'N'
+        where ${param}
+    </update>
+
+    <insert id="InsertPo" parameterType="kr.co.hs.position.dto.PositionDTO">
+        insert into hsgw.position(position_name,position_level,sort,use_yn)
+        VALUES (#{positionName}, #{positionLevel},0,'Y' )
+    </insert>
+
+    <update id="updatePo" parameterType="kr.co.hs.position.dto.PositionDTO">
+        update hsgw.position set position_name=#{positionName},position_level=#{positionLevel} where position_cd=#{positionCd}
+    </update>
+
+    <select id="getListPosition" parameterType="kr.co.hs.position.dto.PositionDTO">
+
+    </select>
+
+    <select id="getlistByid" parameterType="hashmap" resultType="kr.co.hs.position.dto.PositionDTO">
+        SELECT
+            POSITION_CD
+             , POSITION_NAME,position_level
+        FROM POSITION where POSITION_CD=#{positionCd}
+    </select>
+
+</mapper>

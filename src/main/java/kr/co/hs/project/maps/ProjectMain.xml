@@ -1,0 +1,1647 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//ibatis.apache.org//DTD Mapper 3.0//EN" "http://ibatis.apache.org/dtd/ibatis-3-mapper.dtd">
+<mapper namespace="ProjectMain">
+
+    <select id="ProjectMainList" parameterType="kr.co.hs.project.dto.ProjectMainDTO"
+            resultType="kr.co.hs.project.dto.ProjectMainDTO">
+        <![CDATA[
+            SELECT *
+               , ROW_NUMBER() OVER (ORDER BY pj_id asc) AS ROWNUM
+            FROM
+                (
+                    SELECT
+                            prj.*
+                            , GET_EMP_NAME(pla.EMP_CD, #{langCd}) AS EMP_NAME
+                            , GET_POSITION_NAME(pla.POSITION_CD, #{langCd}) AS POSITION_NAME
+                            , GET_DEPT_LEVEL_NAME(pla.DEPT_CD, #{langCd}) AS DEPT_NAME
+                            , CASE
+                                WHEN pt.pj_id IS NOT NULL
+                                    then 1
+                                ELSE 0
+                            END AS TRANSLATION_STATUS
+                            , GET_EMP_NAME(pla.emp_cd, #{langCd}) AS leader_project_name
+                            , GET_EMP_NAME(acc.emp_cd, #{langCd}) AS leader_accounting_name
+                            , GET_POSITION_NAME(acc.POSITION_CD, #{langCd}) AS position_accounting_name
+                            , GET_DEPT_LEVEL_NAME(acc.DEPT_CD, #{langCd}) AS dept_accounting_name
+
+                            , pla.dept_cd AS pla_dept_cd
+                            , dp.advance_amount
+                            , dp.remain_amount
+                            , (dp.advance_amount - dp.remain_amount) AS use_amount
+                            , CONCAT((SELECT COUNT(*) FROM day_project WHERE pj_id = prj.pj_id AND day_project_status = 'Y' AND spent_type = 'spent') , '/' , (SELECT COUNT(*) FROM day_project WHERE pj_id = prj.pj_id AND day_project_status = 'N' AND spent_type = 'spent')) as approval
+                    FROM project prj
+                    LEFT JOIN (
+                                    SELECT DISTINCT(pt.pj_id)
+                                    FROM project_translation pt
+                                    JOIN translation trs ON trs.translation_id = pt.translation_id AND trs.use_yn = 'Y'
+                                ) pt ON pt.pj_id = prj.pj_id
+                    LEFT JOIN project_leader_auth pla ON pla.pj_id = prj.pj_id AND pla.current_yn = 'Y' and pla.leader_type = '1'
+                    LEFT JOIN (
+                                    SELECT *
+                                    FROM day_project
+                                    WHERE dp_id
+                                            IN (
+                                                    SELECT MAX(dp_id)
+                                                    FROM day_project
+                                                    WHERE use_yn = 'Y'
+                                                    GROUP BY pj_id
+                                                )
+                                    AND use_yn = 'Y'
+                                    ) dp
+                                    ON dp.pj_id = prj.pj_id
+                    LEFT JOIN project_leader_auth acc ON acc.pj_id = prj.pj_id AND acc.current_yn = 'Y' AND acc.leader_type = '2'
+                    WHERE
+                    prj.USE_YN = 'Y'
+        ]]>
+        <if test='rule == "Y"'>
+            <![CDATA[
+            AND prj.pj_id IN (
+                  		SELECT pj_id
+								FROM project_leader_auth
+								WHERE emp_cd = #{empCd} AND leader_type = 2
+						  )
+            ]]>
+        </if>
+        <if test='rule == "N"'>
+            <![CDATA[
+            AND prj.pj_id IN (
+                  		SELECT pj_id
+								FROM project_leader_auth
+								WHERE emp_cd = #{empCd} AND leader_type = 1
+						  )
+            ]]>
+        </if>
+        <![CDATA[
+                ) result
+            WHERE 1=1
+
+        ]]>
+        <if test="dateSql != null &amp;&amp; dateSql !=''">
+            <![CDATA[  ${dateSql}  ]]>
+        </if>
+        <if test="deptSearch != null &amp;&amp; deptSearch !=''">
+            <![CDATA[  ${deptSearch}  ]]>
+        </if>
+        <if test="translationStatus != null &amp;&amp; translationStatus !=''">
+            <![CDATA[  ${translationStatus}  ]]>
+        </if>
+        <if test="approval != null &amp;&amp; approval !=''">
+            <![CDATA[  ${approval}  ]]>
+        </if>
+        <if test="inputSearchSql != null &amp;&amp; inputSearchSql !=''">
+            <![CDATA[  ${inputSearchSql}  ]]>
+        </if>
+        <![CDATA[
+            ORDER BY ${str}
+            LIMIT #{recordsPerPage} OFFSET #{startRow}
+        ]]>
+    </select>
+
+    <select id="CountRecordProjectMain" parameterType="kr.co.hs.project.dto.ProjectMainDTO" resultType="Integer">
+        <![CDATA[
+            SELECT count(*) as sum_row
+            FROM
+                (
+                    SELECT
+                            prj.*
+                            , GET_EMP_NAME(pla.EMP_CD, #{langCd}) AS EMP_NAME
+                            , GET_POSITION_NAME(pla.POSITION_CD, #{langCd}) AS POSITION_NAME
+                            , GET_DEPT_LEVEL_NAME(pla.DEPT_CD, #{langCd}) AS DEPT_NAME
+                            , CASE
+                                WHEN pt.pj_id IS NOT NULL
+                                    then 1
+                                ELSE 0
+                            END AS TRANSLATION_STATUS
+                            , GET_EMP_NAME(pla.emp_cd, #{langCd}) AS leader_project_name
+                            , GET_EMP_NAME(acc.emp_cd, #{langCd}) AS leader_accounting_name
+                            , GET_POSITION_NAME(acc.POSITION_CD, #{langCd}) AS position_accounting_name
+                            , GET_DEPT_LEVEL_NAME(acc.DEPT_CD, #{langCd}) AS dept_accounting_name
+
+                            , pla.dept_cd AS pla_dept_cd
+                            , dp.advance_amount
+                            , dp.remain_amount
+                            , (dp.advance_amount - dp.remain_amount) AS use_amount
+                            , CONCAT((SELECT COUNT(*) FROM day_project WHERE pj_id = prj.pj_id AND day_project_status = 'N' AND spent_type = 'spent'), '/' ,(SELECT COUNT(*) FROM day_project WHERE pj_id = prj.pj_id AND day_project_status = 'Y' AND spent_type = 'spent')) as approval
+                    FROM project prj
+                    LEFT JOIN (
+                                    SELECT DISTINCT(pt.pj_id)
+                                    FROM project_translation pt
+                                    JOIN translation trs ON trs.translation_id = pt.translation_id AND trs.use_yn = 'Y'
+                                ) pt ON pt.pj_id = prj.pj_id
+                    LEFT JOIN project_leader_auth pla ON pla.pj_id = prj.pj_id AND pla.current_yn = 'Y' and pla.leader_type = '1'
+                    LEFT JOIN (
+                                    SELECT *
+                                    FROM day_project
+                                    WHERE dp_id
+                                            IN (
+                                                    SELECT MAX(dp_id)
+                                                    FROM day_project
+                                                    WHERE use_yn = 'Y'
+                                                    GROUP BY pj_id
+                                                )
+                                    AND use_yn = 'Y'
+                                    ) dp
+                                    ON dp.pj_id = prj.pj_id
+                    LEFT JOIN project_leader_auth acc ON acc.pj_id = prj.pj_id AND acc.current_yn = 'Y' AND acc.leader_type = '2'
+                    WHERE
+                    prj.USE_YN = 'Y'
+                    ]]>
+        <if test='rule == "Y"'>
+            <![CDATA[
+            AND prj.pj_id IN (
+                  		SELECT pj_id
+								FROM project_leader_auth
+								WHERE emp_cd = #{empCd} AND leader_type = 2
+						  )
+            ]]>
+        </if>
+        <if test='rule == "N"'>
+            <![CDATA[
+            AND prj.pj_id IN (
+                  		SELECT pj_id
+								FROM project_leader_auth
+								WHERE emp_cd = #{empCd} AND leader_type = 1
+						  )
+            ]]>
+        </if>
+        <![CDATA[
+                ) result
+            WHERE 1=1
+        ]]>
+        <if test="dateSql != null &amp;&amp; dateSql !=''">
+            <![CDATA[  ${dateSql}  ]]>
+        </if>
+        <if test="deptSearch != null &amp;&amp; deptSearch !=''">
+            <![CDATA[  ${deptSearch}  ]]>
+        </if>
+        <if test="translationStatus != null &amp;&amp; translationStatus !=''">
+            <![CDATA[  ${translationStatus}  ]]>
+        </if>
+        <if test="approval != null &amp;&amp; approval !=''">
+            <![CDATA[  ${approval}  ]]>
+        </if>
+        <if test="inputSearchSql != null &amp;&amp; inputSearchSql !=''">
+            <![CDATA[  ${inputSearchSql}  ]]>
+        </if>
+    </select>
+
+    <select id="selectMainProjectNExcel" parameterType="kr.co.hs.project.dto.ProjectMainDTO"
+            resultType="kr.co.hs.project.dto.ProjectMainDTO">
+        <![CDATA[
+            SELECT *
+               , ROW_NUMBER() OVER (ORDER BY pj_id ASC) AS ROWNUM
+            FROM
+            (
+                SELECT
+                    ROW_NUMBER() OVER (ORDER BY prj.pj_id ASC) as pj_id
+                    , 'translate' AS type
+                    , prj.lang_cd
+                    , prj.emp_cd
+                    , prj.dept_change_history_id
+                    , prj.dept_cd
+                    , prj.position_cd
+                    , prj.project_status
+                    , case
+                        when pt.contents IS NULL
+                            then "-"
+                        ELSE
+                            pt.contents
+                    END AS title
+                    , prj.project_start_date
+                    , prj.project_end_date
+                    , prj.reg_dt
+                    , prj.use_yn
+                    , GET_EMP_NAME(pla.EMP_CD, #{langCd}) AS EMP_NAME
+                    , GET_POSITION_NAME(pla.POSITION_CD, #{langCd}) AS POSITION_NAME
+                    , GET_DEPT_LEVEL_NAME(pla.DEPT_CD, #{langCd}) AS DEPT_NAME
+                    , CASE
+                      WHEN pt.pj_id IS NOT NULL
+                          then 1
+                      ELSE 0
+                    END AS TRANSLATION_STATUS
+                    , GET_EMP_NAME(pla.emp_cd, #{langCd}) AS leader_project_name
+                    , GET_EMP_NAME(acc.emp_cd, #{langCd}) AS leader_accounting_name
+                    , GET_POSITION_NAME(acc.POSITION_CD, #{langCd}) AS position_accounting_name
+                    , GET_DEPT_LEVEL_NAME(acc.DEPT_CD, #{langCd}) AS dept_accounting_name
+                    , pla.dept_cd AS pla_dept_cd
+                    , dp.advance_amount
+                    , dp.remain_amount
+                    , (dp.advance_amount - dp.remain_amount) AS use_amount
+
+                    , CONCAT((SELECT COUNT(*) FROM day_project WHERE pj_id = prj.pj_id AND day_project_status = 'Y') , '/' , (SELECT COUNT(*) FROM day_project WHERE pj_id = prj.pj_id AND day_project_status = 'N')) as approval
+                FROM project prj
+                LEFT JOIN (
+                   SELECT pt.pj_id, pt.translation_id, trs.contents FROM project_translation pt
+                    JOIN translation trs ON trs.translation_id = pt.translation_id AND trs.use_yn = 'Y'
+                    GROUP BY pj_id
+                ) pt ON pt.pj_id = prj.pj_id
+                LEFT JOIN project_leader_auth pla ON pla.pj_id = prj.pj_id AND pla.current_yn = 'Y' and pla.leader_type = '1'
+                LEFT JOIN (
+                    SELECT *
+                    FROM day_project
+                    WHERE dp_id
+                        IN (
+                             SELECT MAX(dp_id)
+                             FROM day_project
+                             WHERE use_yn = 'Y'
+                             GROUP BY pj_id
+                        )
+                    AND use_yn = 'Y'
+                    ) dp
+                    ON dp.pj_id = prj.pj_id
+                LEFT JOIN project_leader_auth acc ON acc.pj_id = prj.pj_id AND acc.current_yn = 'Y' AND acc.leader_type = '2'
+                WHERE
+                prj.USE_YN = 'Y'
+                AND prj.project_status = 'N'
+                ]]>
+        <if test='rule == "Y"'>
+            <![CDATA[
+                   AND prj.pj_id IN (
+                        SELECT pj_id
+                            FROM project_leader_auth
+                            WHERE emp_cd = #{empCd} AND leader_type = 2
+                      )
+                   ]]>
+        </if>
+        <if test='rule == "N"'>
+            <![CDATA[
+                   AND prj.pj_id IN (
+                    SELECT pj_id
+                        FROM project_leader_auth
+                        WHERE emp_cd = #{empCd} AND leader_type = 1
+                  )
+                   ]]>
+        </if>
+        <![CDATA[
+                UNION
+                SELECT
+                    ROW_NUMBER() OVER (ORDER BY prj.pj_id ASC) as pj_id
+                    , ROW_NUMBER() OVER (ORDER BY prj.pj_id ASC) AS type
+                    , prj.lang_cd
+                    , prj.emp_cd
+                    , prj.dept_change_history_id
+                    , prj.dept_cd
+                    , prj.position_cd
+                    , prj.project_status
+                    , prj.title
+                    , prj.project_start_date
+                    , prj.project_end_date
+                    , prj.reg_dt
+                    , prj.use_yn
+                    , GET_EMP_NAME(pla.EMP_CD, #{langCd}) AS EMP_NAME
+                    , GET_POSITION_NAME(pla.POSITION_CD, #{langCd}) AS POSITION_NAME
+                    , GET_DEPT_LEVEL_NAME(pla.DEPT_CD, #{langCd}) AS DEPT_NAME
+                    , CASE
+                      WHEN pt.pj_id IS NOT NULL
+                          then 1
+                      ELSE 0
+                    END AS TRANSLATION_STATUS
+                    , GET_EMP_NAME(pla.emp_cd, #{langCd}) AS leader_project_name
+                    , GET_EMP_NAME(acc.emp_cd, #{langCd}) AS leader_accounting_name
+                    , GET_POSITION_NAME(acc.POSITION_CD, #{langCd}) AS position_accounting_name
+                    , GET_DEPT_LEVEL_NAME(acc.DEPT_CD, #{langCd}) AS dept_accounting_name
+
+                    , pla.dept_cd AS pla_dept_cd
+                    , dp.advance_amount
+                    , dp.remain_amount
+                    , (dp.advance_amount - dp.remain_amount) AS use_amount
+                    , CONCAT((SELECT COUNT(*) FROM day_project WHERE pj_id = prj.pj_id AND day_project_status = 'Y') , '/' , (SELECT COUNT(*) FROM day_project WHERE pj_id = prj.pj_id AND day_project_status = 'N')) as approval
+                FROM project prj
+                LEFT JOIN (
+                               SELECT DISTINCT(pt.pj_id)
+                               FROM project_translation pt
+                               JOIN translation trs ON trs.translation_id = pt.translation_id AND trs.use_yn = 'Y'
+                           ) pt ON pt.pj_id = prj.pj_id
+                LEFT JOIN project_leader_auth pla ON pla.pj_id = prj.pj_id AND pla.current_yn = 'Y' and pla.leader_type = '1'
+                LEFT JOIN (
+                               SELECT *
+                               FROM day_project
+                               WHERE dp_id
+                                       IN (
+                                               SELECT MAX(dp_id)
+                                               FROM day_project
+                                               WHERE use_yn = 'Y'
+                                               GROUP BY pj_id
+                                           )
+                               AND use_yn = 'Y'
+                               ) dp
+                               ON dp.pj_id = prj.pj_id
+                LEFT JOIN project_leader_auth acc ON acc.pj_id = prj.pj_id AND acc.current_yn = 'Y' AND acc.leader_type = '2'
+                WHERE
+                prj.USE_YN = 'Y'
+                AND prj.project_status = 'N'
+                ]]>
+                    <if test='rule == "Y"'>
+                        <![CDATA[
+                   AND prj.pj_id IN (
+                                SELECT pj_id
+                                    FROM project_leader_auth
+                                    WHERE emp_cd = #{empCd} AND leader_type = 2
+                              )
+                   ]]>
+                    </if>
+                    <if test='rule == "N"'>
+                        <![CDATA[
+                   AND prj.pj_id IN (
+                                SELECT pj_id
+                                    FROM project_leader_auth
+                                    WHERE emp_cd = #{empCd} AND leader_type = 1
+                              )
+                   ]]>
+                    </if>
+                    <![CDATA[
+            ) result
+            WHERE 1=1
+        ]]>
+        <if test="dateSql != null &amp;&amp; dateSql !=''">
+            <![CDATA[  ${dateSql}  ]]>
+        </if>
+        <if test="deptSearch != null &amp;&amp; deptSearch !=''">
+            <![CDATA[  ${deptSearch}  ]]>
+        </if>
+        <if test="translationStatus != null &amp;&amp; translationStatus !=''">
+            <![CDATA[  ${translationStatus}  ]]>
+        </if>
+        <if test="approval != null &amp;&amp; approval !=''">
+            <![CDATA[  ${approval}  ]]>
+        </if>
+        <if test="inputSearchSql != null &amp;&amp; inputSearchSql !=''">
+            <![CDATA[  ${inputSearchSql}  ]]>
+        </if>
+        <![CDATA[
+            ORDER BY ${str}
+            LIMIT #{recordsPerPage} OFFSET #{startRow}
+        ]]>
+    </select>
+
+    <select id="selectMainProjectYExcel" parameterType="kr.co.hs.project.dto.ProjectMainDTO"
+            resultType="kr.co.hs.project.dto.ProjectMainDTO">
+        <![CDATA[
+            SELECT *
+               , ROW_NUMBER() OVER (ORDER BY pj_id ASC) AS ROWNUM
+            FROM
+            (
+                SELECT
+                    ROW_NUMBER() OVER (ORDER BY prj.pj_id ASC) as pj_id
+                    , 'translate' AS type
+                    , prj.lang_cd
+                    , prj.emp_cd
+                    , prj.dept_change_history_id
+                    , prj.dept_cd
+                    , prj.position_cd
+                    , prj.project_status
+                     , case
+                        when pt.contents IS NULL
+                            then "-"
+                        ELSE
+                            pt.contents
+                    END AS title
+                    , prj.project_start_date
+                    , prj.project_end_date
+                    , prj.reg_dt
+                    , prj.use_yn
+                    , GET_EMP_NAME(pla.EMP_CD, #{langCd}) AS EMP_NAME
+                    , GET_POSITION_NAME(pla.POSITION_CD, #{langCd}) AS POSITION_NAME
+                    , GET_DEPT_LEVEL_NAME(pla.DEPT_CD, #{langCd}) AS DEPT_NAME
+                    , CASE
+                      WHEN pt.pj_id IS NOT NULL
+                          then 1
+                      ELSE 0
+                    END AS TRANSLATION_STATUS
+                    , GET_EMP_NAME(pla.emp_cd, #{langCd}) AS leader_project_name
+                    , GET_EMP_NAME(acc.emp_cd, #{langCd}) AS leader_accounting_name
+                    , GET_POSITION_NAME(acc.POSITION_CD, #{langCd}) AS position_accounting_name
+                    , GET_DEPT_LEVEL_NAME(acc.DEPT_CD, #{langCd}) AS dept_accounting_name
+                    , pla.dept_cd AS pla_dept_cd
+                    , dp.advance_amount
+                    , dp.remain_amount
+                    , (dp.advance_amount - dp.remain_amount) AS use_amount
+
+                    , CONCAT((SELECT COUNT(*) FROM day_project WHERE pj_id = prj.pj_id AND day_project_status = 'Y') , '/' , (SELECT COUNT(*) FROM day_project WHERE pj_id = prj.pj_id AND day_project_status = 'N')) as approval
+                FROM project prj
+                LEFT JOIN (
+                   SELECT pt.pj_id, pt.translation_id, trs.contents FROM project_translation pt
+                    JOIN translation trs ON trs.translation_id = pt.translation_id AND trs.use_yn = 'Y'
+                    GROUP BY pj_id
+                ) pt ON pt.pj_id = prj.pj_id
+                LEFT JOIN project_leader_auth pla ON pla.pj_id = prj.pj_id AND pla.current_yn = 'Y' and pla.leader_type = '1'
+                LEFT JOIN (
+                    SELECT *
+                    FROM day_project
+                    WHERE dp_id
+                        IN (
+                             SELECT MAX(dp_id)
+                             FROM day_project
+                             WHERE use_yn = 'Y'
+                             GROUP BY pj_id
+                        )
+                    AND use_yn = 'Y'
+                    ) dp
+                    ON dp.pj_id = prj.pj_id
+                LEFT JOIN project_leader_auth acc ON acc.pj_id = prj.pj_id AND acc.current_yn = 'Y' AND acc.leader_type = '2'
+                WHERE
+                prj.USE_YN = 'Y'
+                AND prj.project_status = 'Y'
+                ]]>
+        <if test='rule == "Y"'>
+            <![CDATA[
+                   AND prj.pj_id IN (
+                        SELECT pj_id
+                            FROM project_leader_auth
+                            WHERE emp_cd = #{empCd} AND leader_type = 2
+                      )
+                   ]]>
+        </if>
+        <if test='rule == "N"'>
+            <![CDATA[
+                   AND prj.pj_id IN (
+                    SELECT pj_id
+                        FROM project_leader_auth
+                        WHERE emp_cd = #{empCd} AND leader_type = 1
+                  )
+                   ]]>
+        </if>
+        <![CDATA[
+                UNION
+                SELECT
+                    ROW_NUMBER() OVER (ORDER BY prj.pj_id ASC) as pj_id
+                    , ROW_NUMBER() OVER (ORDER BY prj.pj_id ASC) AS type
+                    , prj.lang_cd
+                    , prj.emp_cd
+                    , prj.dept_change_history_id
+                    , prj.dept_cd
+                    , prj.position_cd
+                    , prj.project_status
+                    , prj.title
+                    , prj.project_start_date
+                    , prj.project_end_date
+                    , prj.reg_dt
+                    , prj.use_yn
+                    , GET_EMP_NAME(pla.EMP_CD, #{langCd}) AS EMP_NAME
+                    , GET_POSITION_NAME(pla.POSITION_CD, #{langCd}) AS POSITION_NAME
+                    , GET_DEPT_LEVEL_NAME(pla.DEPT_CD, #{langCd}) AS DEPT_NAME
+                    , CASE
+                      WHEN pt.pj_id IS NOT NULL
+                          then 1
+                      ELSE 0
+                    END AS TRANSLATION_STATUS
+                    , GET_EMP_NAME(pla.emp_cd, #{langCd}) AS leader_project_name
+                    , GET_EMP_NAME(acc.emp_cd, #{langCd}) AS leader_accounting_name
+                    , GET_POSITION_NAME(acc.POSITION_CD, #{langCd}) AS position_accounting_name
+                    , GET_DEPT_LEVEL_NAME(acc.DEPT_CD, #{langCd}) AS dept_accounting_name
+
+                    , pla.dept_cd AS pla_dept_cd
+                    , dp.advance_amount
+                    , dp.remain_amount
+                    , (dp.advance_amount - dp.remain_amount) AS use_amount
+                    , CONCAT((SELECT COUNT(*) FROM day_project WHERE pj_id = prj.pj_id AND day_project_status = 'Y') , '/' , (SELECT COUNT(*) FROM day_project WHERE pj_id = prj.pj_id AND day_project_status = 'N')) as approval
+                FROM project prj
+                LEFT JOIN (
+                               SELECT DISTINCT(pt.pj_id)
+                               FROM project_translation pt
+                               JOIN translation trs ON trs.translation_id = pt.translation_id AND trs.use_yn = 'Y'
+                           ) pt ON pt.pj_id = prj.pj_id
+                LEFT JOIN project_leader_auth pla ON pla.pj_id = prj.pj_id AND pla.current_yn = 'Y' and pla.leader_type = '1'
+                LEFT JOIN (
+                               SELECT *
+                               FROM day_project
+                               WHERE dp_id
+                                       IN (
+                                               SELECT MAX(dp_id)
+                                               FROM day_project
+                                               WHERE use_yn = 'Y'
+                                               GROUP BY pj_id
+                                           )
+                               AND use_yn = 'Y'
+                               ) dp
+                               ON dp.pj_id = prj.pj_id
+                LEFT JOIN project_leader_auth acc ON acc.pj_id = prj.pj_id AND acc.current_yn = 'Y' AND acc.leader_type = '2'
+                WHERE
+                prj.USE_YN = 'Y'
+                AND prj.project_status = 'Y'
+                ]]>
+        <if test='rule == "Y"'>
+            <![CDATA[
+                   AND prj.pj_id IN (
+                                SELECT pj_id
+                                    FROM project_leader_auth
+                                    WHERE emp_cd = #{empCd} AND leader_type = 2
+                              )
+                   ]]>
+        </if>
+        <if test='rule == "N"'>
+            <![CDATA[
+                   AND prj.pj_id IN (
+                                SELECT pj_id
+                                    FROM project_leader_auth
+                                    WHERE emp_cd = #{empCd} AND leader_type = 1
+                              )
+                   ]]>
+        </if>
+        <![CDATA[
+            ) result
+            WHERE 1=1
+        ]]>
+        <if test="dateSql != null &amp;&amp; dateSql !=''">
+            <![CDATA[  ${dateSql}  ]]>
+        </if>
+        <if test="deptSearch != null &amp;&amp; deptSearch !=''">
+            <![CDATA[  ${deptSearch}  ]]>
+        </if>
+        <if test="translationStatus != null &amp;&amp; translationStatus !=''">
+            <![CDATA[  ${translationStatus}  ]]>
+        </if>
+        <if test="approval != null &amp;&amp; approval !=''">
+            <![CDATA[  ${approval}  ]]>
+        </if>
+        <if test="inputSearchSql != null &amp;&amp; inputSearchSql !=''">
+            <![CDATA[  ${inputSearchSql}  ]]>
+        </if>
+        <![CDATA[
+            ORDER BY ${str}
+            LIMIT #{recordsPerPage} OFFSET #{startRow}
+        ]]>
+    </select>
+
+    <select id="selectProjectAuth" parameterType="kr.co.hs.project.dto.ProjectAuthDTO"
+            resultType="kr.co.hs.project.dto.ProjectAuthDTO">
+        <![CDATA[
+        SELECT *
+             , GET_EMP_NAME(EMP_CD, #{langCd})           AS EMP_NAME
+             , GET_DEPT_LEVEL_NAME(DEPT_CD, #{langCd})   AS DEPT_NAME
+             , GET_POSITION_NAME(position_cd, #{langCd}) AS POSITION_NAME
+             , ROW_NUMBER()                                 over(ORDER BY project_auth_id DESC) AS rownum
+        FROM project_auth
+        WHERE use_yn = 'Y'
+        ]]>
+    </select>
+
+    <select id="checkExitEmpProjectAuth" parameterType="kr.co.hs.emp.dto.EmpDTO" resultType="int">
+        <![CDATA[
+        SELECT COUNT(*)
+        FROM project_auth
+        WHERE emp_cd = #{empCd}
+          AND use_yn = 'Y'
+        ]]>
+    </select>
+
+    <insert id="insertProjectAuth" parameterType="kr.co.hs.project.dto.ProjectAuthDTO">
+        <![CDATA[
+        INSERT INTO `project_auth` ( `emp_cd`
+                                   , `create_date`
+                                   , `create_id`
+                                   , `dept_change_history_id`
+                                   , `dept_cd`
+                                   , `position_cd`
+                                   , `use_yn`)
+        VALUES ( #{empCd}
+               , now()
+               , #{createId}
+               , (select dept_change_history_id
+                  from dept_change_history
+                  where dept_cd = #{deptCd}
+                    and dept_version = (select max(dept_version) from dept_change_history where dept_cd = #{deptCd}))
+               , #{deptCd}
+               , #{positionCd}
+               , 'Y');
+        ]]>
+    </insert>
+
+    <update id="deleteProjectAuth" parameterType="kr.co.hs.project.dto.ProjectAuthDTO">
+        <![CDATA[
+        UPDATE project_auth
+        SET use_yn = 'N'
+        WHERE project_auth_id = #{projectAuthId}
+        ]]>
+    </update>
+
+    <select id="checkExitProjectAuth" parameterType="kr.co.hs.project.dto.ProjectAuthDTO" resultType="int">
+        <![CDATA[
+        SELECT COUNT(*)
+        FROM project_auth
+        WHERE emp_cd = #{empCd}
+          AND use_yn = 'Y'
+        ]]>
+    </select>
+
+    <select id="CountTotalProjectMain" parameterType="Integer" resultType="Integer">
+        <![CDATA[
+        SELECT COUNT(*)
+        FROM PROJECT
+        WHERE USE_YN = 'Y'
+          AND 1 = 1
+        ]]>
+    </select>
+
+    <insert id="writeMainProject" parameterType="kr.co.hs.project.dto.ProjectMainDTO">
+        INSERT INTO `project` ( `lang_cd`
+                              , `emp_cd`
+                              , `dept_change_history_id`
+                              , `dept_cd`
+                              , `position_cd`
+                              , `project_status`
+                              , `title`
+                              , `project_start_date`
+                              , `project_end_date`
+                              , `reg_dt`
+                              , `use_yn`)
+        VALUES ( #{langCd}
+               , #{empCd}
+               , (select dept_change_history_id
+                  from dept_change_history
+                  where dept_cd = #{deptCd}
+                    and dept_version = (select max(dept_version) from dept_change_history where dept_cd = #{deptCd}))
+               , #{deptCd}
+               , #{positionCd}
+               , 'N'
+               , #{title}
+               , #{projectStartDate}
+               , #{projectEndDate}
+               , NOW()
+               , 'Y');
+    </insert>
+
+    <insert id="writeProjectLeaderAuth" parameterType="kr.co.hs.project.dto.ProjectLeaderAuthDTO">
+        INSERT INTO `project_leader_auth` ( `pj_id`
+                                          , `leader_type`
+                                          , `emp_cd`
+                                          , `dept_change_history_id`
+                                          , `dept_cd`
+                                          , `position_cd`
+                                          , `current_yn`
+                                          , `history_num`
+                                          , `create_date`
+                                          , `create_id`)
+        VALUES ( (SELECT MAX(pj_id) FROM project WHERE use_yn = 'Y')
+               , #{leaderType}
+               , #{empCd}
+               , (select dept_change_history_id
+                  from dept_change_history
+                  where dept_cd = #{deptCd}
+                    and dept_version = (select max(dept_version) from dept_change_history where dept_cd = #{deptCd}))
+               , #{deptCd}
+               , #{positionCd}
+               , 'Y'
+               , 0
+               , now()
+               , #{createId});
+    </insert>
+
+    <select id="selectOneMainProject" parameterType="kr.co.hs.project.dto.ProjectMainDTO"
+            resultType="kr.co.hs.project.dto.ProjectMainDTO">
+        <![CDATA[
+        SELECT *
+        FROM project
+        WHERE pj_id = #{pjId}
+          AND use_yn = 'Y'
+        ]]>
+    </select>
+
+    <select id="selectOneProjectLeader" parameterType="kr.co.hs.project.dto.ProjectMainDTO"
+            resultType="kr.co.hs.project.dto.ProjectMainDTO">
+        <![CDATA[
+        SELECT CONCAT(GET_EMP_NAME(emp_cd, #{langCd}), ' - ',
+                      GET_DEPT_LEVEL_HORIZONTALITY_NAME(dept_cd, #{langCd})) AS leader_project_name
+        FROM project_leader_auth
+        WHERE pj_id = #{pjId}
+          AND leader_type = 1
+        ORDER BY history_num DESC LIMIT 1
+        ]]>
+    </select>
+
+    <select id="selectOneAccountingLeader" parameterType="kr.co.hs.project.dto.ProjectMainDTO"
+            resultType="kr.co.hs.project.dto.ProjectMainDTO">
+        <![CDATA[
+        SELECT CONCAT(GET_EMP_NAME(emp_cd, #{langCd}), ' - ',
+                      GET_DEPT_LEVEL_HORIZONTALITY_NAME(dept_cd, #{langCd})) AS leader_accounting_name
+        FROM project_leader_auth
+        WHERE pj_id = #{pjId}
+          AND leader_type = 2
+        ORDER BY history_num DESC LIMIT 1
+        ]]>
+    </select>
+
+    <update id="updateMainProject" parameterType="kr.co.hs.project.dto.ProjectMainDTO">
+        UPDATE project
+        SET title              = #{title}
+          , project_start_date = #{projectStartDate}
+          , project_end_date   = #{projectEndDate}
+        WHERE pj_id = #{pjId}
+          AND use_yn = 'Y'
+    </update>
+
+    <insert id="updateProjectLeaderAuth" parameterType="kr.co.hs.project.dto.ProjectLeaderAuthDTO">
+        UPDATE project_leader_auth
+        SET current_yn = 'N'
+        WHERE leader_type = #{leaderType}
+          and pj_id = #{pjId}
+          AND current_yn = 'Y';
+
+        INSERT INTO `project_leader_auth` ( `pj_id`
+                                          , `leader_type`
+                                          , `emp_cd`
+                                          , `dept_change_history_id`
+                                          , `dept_cd`
+                                          , `position_cd`
+                                          , `current_yn`
+                                          , `history_num`
+                                          , `create_date`
+                                          , `create_id`)
+        VALUES ( #{pjId}
+               , #{leaderType}
+               , #{empCd}
+               , (select dept_change_history_id
+                  from dept_change_history
+                  where dept_cd = #{deptCd}
+                    and dept_version = (select max(dept_version) from dept_change_history where dept_cd = #{deptCd}))
+               , #{deptCd}
+               , #{positionCd}
+               , 'Y'
+               , (select *
+                  from (SELECT (MAX(history_num) + 1) as history_num
+                        FROM project_leader_auth
+                        WHERE pj_id = #{pjId}
+                          and leader_type = #{leaderType}) as result)
+               , now()
+               , #{createId});
+    </insert>
+
+    <update id="deleteMainProject" parameterType="hashmap">
+        UPDATE PROJECT
+        SET USE_YN = 'N'
+        WHERE ${param}
+    </update>
+
+    <update id="approvalProject" parameterType="hashmap">
+        UPDATE PROJECT
+        SET PROJECT_STATUS = 'Y'
+        WHERE ${param}
+    </update>
+
+    <select id="selectLeaderMainProject" parameterType="kr.co.hs.project.dto.ProjectLeaderAuthDTO"
+            resultType="kr.co.hs.project.dto.ProjectLeaderAuthDTO">
+        SELECT *, ROW_NUMBER() over(ORDER BY project_leader_auth_id DESC) AS pj_id
+        FROM (
+                 SELECT pla.project_leader_auth_id
+                      , GET_LOCATION_STATUS(cc.c_code_name, #{langCd}) AS LEADER_TYPE
+                      , GET_EMP_NAME(pla.emp_cd, #{langCd})            AS EMP_NAME
+                      , GET_DEPT_LEVEL_NAME(pla.dept_cd, #{langCd})    AS DEPT_NAME
+                      , pla.create_date
+                      , GET_EMP_NAME(pla.create_id, #{langCd})         AS CREATE_BY
+                 FROM project_leader_auth pla
+                          LEFT JOIN c_code cc
+                                    ON cc.c_code_value = pla.leader_type
+                                        AND cc.c_code = 'leadertype'
+                 WHERE pj_id = #{pjId}
+             ) result
+    </select>
+
+    <!--- end comment main project -->
+
+    <select id="getDayProjectList" parameterType="kr.co.hs.project.dto.DayProjectDTO"
+            resultType="kr.co.hs.project.dto.DayProjectDTO">
+        <![CDATA[
+        SELECT dp.dp_id,
+                dp.pj_id,
+                dp.lang_cd,
+                dp.emp_cd,
+                dp.dept_change_history_id,
+                dp.dept_cd,
+                dp.position_cd,
+                (SELECT GET_CODE_NAME(c_code_id, #{langCd}) FROM c_code WHERE c_code_value=dp.spent_type AND c_code='spentstatus' and use_yn='Y') AS spent_type,
+                dp.advance_amount,
+                dp.project_price,
+                dp.remain_amount,
+                dp.title,
+                dp.day_project_status,
+                dp.reg_dt,
+                dp.use_yn,
+               p.title AS project_name,
+               GET_DEPT_LEVEL_NAME(dp.dept_cd, #{langCd}) AS dept_name,
+               GET_POSITION_NAME(dp.position_cd, #{langCd}) AS position_name,
+               GET_EMP_NAME(dp.emp_cd, #{langCd}) AS emp_name,
+               (SELECT COUNT(dpi_id) FROM day_project_item WHERE dp_id=dp.dp_id and use_yn='Y') AS num_of_item,
+               ( SELECT COUNT(dwt.dp_id) FROM day_project_translation dwt left JOIN translation t on dwt.translation_id = t.translation_id WHERE dp_id=dp.dp_id AND t.use_yn='Y') AS translation_status,
+               ROW_NUMBER() OVER (ORDER BY dp.dp_id asc) AS ROWNUM
+        FROM day_project dp
+            left JOIN project p ON dp.pj_id=p.pj_id
+        WHERE dp.use_yn='Y' AND dp.pj_id=#{pjId}
+        ]]>
+        <if test="dateSql != null &amp;&amp; dateSql !=''">
+            <![CDATA[  ${dateSql}  ]]>
+        </if>
+        <if test="deptSearch != null &amp;&amp; deptSearch !=''">
+            <![CDATA[ ${deptSearch} ]]>
+        </if>
+        <if test="translationStatus != null &amp;&amp; translationStatus !=''">
+            <![CDATA[  ${translationStatus}  ]]>
+        </if>
+        <if test="dayProjectStatusSql != null &amp;&amp; dayProjectStatusSql !=''">
+            <![CDATA[  ${dayProjectStatusSql}  ]]>
+        </if>
+        <if test="inputSearchSql != null &amp;&amp; inputSearchSql !=''">
+            <![CDATA[  ${inputSearchSql}  ]]>
+        </if>
+        <![CDATA[
+            ORDER BY ${str}
+            LIMIT #{recordsPerPage} OFFSET #{startRow}
+        ]]>
+    </select>
+
+    <select id="getSumRowDayProject" parameterType="kr.co.hs.project.dto.DayProjectDTO" resultType="int">
+        <![CDATA[
+        SELECT count(dp.dp_id) as sum_row
+        FROM day_project dp left JOIN project p ON dp.pj_id=p.pj_id
+        WHERE dp.use_yn='Y' AND dp.pj_id=#{pjId}
+        ]]>
+        <if test="dateSql != null &amp;&amp; dateSql !=''">
+            <![CDATA[  ${dateSql}  ]]>
+        </if>
+        <if test="deptSearch != null &amp;&amp; deptSearch !=''">
+            <![CDATA[ ${deptSearch} ]]>
+        </if>
+        <if test="translationStatus != null &amp;&amp; translationStatus !=''">
+            <![CDATA[  ${translationStatus}  ]]>
+        </if>
+        <if test="dayProjectStatusSql != null &amp;&amp; dayProjectStatusSql !=''">
+            <![CDATA[  ${dayProjectStatusSql}  ]]>
+        </if>
+        <if test="inputSearchSql != null &amp;&amp; inputSearchSql !=''">
+            <![CDATA[  ${inputSearchSql}  ]]>
+        </if>
+    </select>
+
+    <select id="getDayProjectListExcelExport" parameterType="kr.co.hs.project.dto.DayProjectDTO"
+            resultType="kr.co.hs.project.dto.DayProjectDTO">
+        <![CDATA[
+        SELECT *, ROW_NUMBER() OVER (ORDER BY dp_id asc) AS ROWNUM FROM (
+
+            SELECT
+                ROW_NUMBER() OVER (ORDER BY dp.dp_id ASC) as dp_id,
+                'translate' AS type,
+                dp.pj_id,
+                dp.lang_cd,
+                dp.emp_cd,
+                dp.dept_change_history_id,
+                dp.dept_cd,
+                dp.position_cd,
+                (SELECT GET_CODE_NAME(c_code_id, #{langCd}) FROM c_code WHERE c_code_value=dp.spent_type AND c_code='spentstatus' and use_yn='Y') AS spent_type,
+                dp.advance_amount,
+                dp.project_price,
+                dp.remain_amount,
+                case
+                    when dpt.contents IS NULL
+                        then "-"
+                    ELSE
+                        dpt.contents
+                END AS title,
+                dp.day_project_status,
+                dp.reg_dt,
+                dp.use_yn,
+                p.title AS project_name,
+                GET_DEPT_LEVEL_NAME(dp.dept_cd, #{langCd}) AS dept_name,
+                GET_POSITION_NAME(dp.position_cd, #{langCd}) AS position_name,
+                GET_EMP_NAME(dp.emp_cd, #{langCd}) AS emp_name,
+                (SELECT COUNT(dpi_id) FROM day_project_item WHERE dp_id=dp.dp_id and use_yn='Y') AS num_of_item,
+                ( SELECT COUNT(dwt.dp_id) FROM day_project_translation dwt left JOIN translation t on dwt.translation_id = t.translation_id WHERE dp_id=dp.dp_id AND t.use_yn='Y') AS translation_status
+            FROM day_project dp
+               LEFT JOIN (
+                    SELECT dpt.dp_id, trs.contents FROM day_project_translation dpt
+                    JOIN translation trs ON trs.translation_id = dpt.translation_id AND trs.use_yn = 'Y'
+                    GROUP BY dpt.dp_id
+                ) dpt ON dpt.dp_id = dp.dp_id
+               left JOIN project p ON dp.pj_id=p.pj_id
+            WHERE dp.use_yn='Y' AND dp.pj_id=#{pjId}
+            ]]>
+        <if test="dateSql != null &amp;&amp; dateSql !=''">
+            <![CDATA[  ${dateSql}  ]]>
+        </if>
+        <if test="deptSearch != null &amp;&amp; deptSearch !=''">
+            <![CDATA[ ${deptSearch} ]]>
+        </if>
+        <if test="translationStatus != null &amp;&amp; translationStatus !=''">
+            <![CDATA[  ${translationStatus}  ]]>
+        </if>
+        <if test="dayProjectStatusSql != null &amp;&amp; dayProjectStatusSql !=''">
+            <![CDATA[  ${dayProjectStatusSql}  ]]>
+        </if>
+        <if test="inputSearchSql != null &amp;&amp; inputSearchSql !=''">
+            <![CDATA[  ${inputSearchSql}  ]]>
+        </if>
+        <![CDATA[
+
+            UNION
+
+            SELECT
+                ROW_NUMBER() OVER (ORDER BY dp.dp_id ASC) as dp_id,
+                ROW_NUMBER() OVER (ORDER BY dp.dp_id ASC) AS type,
+                dp.pj_id,
+                dp.lang_cd,
+                dp.emp_cd,
+                dp.dept_change_history_id,
+                dp.dept_cd,
+                dp.position_cd,
+                (SELECT GET_CODE_NAME(c_code_id, #{langCd}) FROM c_code WHERE c_code_value=dp.spent_type AND c_code='spentstatus' and use_yn='Y') AS spent_type,
+                dp.advance_amount,
+                dp.project_price,
+                dp.remain_amount,
+                dp.title,
+                dp.day_project_status,
+                dp.reg_dt,
+                dp.use_yn,
+                p.title AS project_name,
+                GET_DEPT_LEVEL_NAME(dp.dept_cd, #{langCd}) AS dept_name,
+                GET_POSITION_NAME(dp.position_cd, #{langCd}) AS position_name,
+                GET_EMP_NAME(dp.emp_cd, #{langCd}) AS emp_name,
+                (SELECT COUNT(dpi_id) FROM day_project_item WHERE dp_id=dp.dp_id and use_yn='Y') AS num_of_item,
+                ( SELECT COUNT(dwt.dp_id) FROM day_project_translation dwt left JOIN translation t on dwt.translation_id = t.translation_id WHERE dp_id=dp.dp_id AND t.use_yn='Y') AS translation_status
+            FROM day_project dp
+               left JOIN project p ON dp.pj_id=p.pj_id
+            WHERE dp.use_yn='Y' AND dp.pj_id=#{pjId}]]>
+            <if test="dateSql != null &amp;&amp; dateSql !=''">
+                <![CDATA[  ${dateSql}  ]]>
+            </if>
+            <if test="deptSearch != null &amp;&amp; deptSearch !=''">
+                <![CDATA[ ${deptSearch} ]]>
+            </if>
+            <if test="translationStatus != null &amp;&amp; translationStatus !=''">
+                <![CDATA[  ${translationStatus}  ]]>
+            </if>
+            <if test="dayProjectStatusSql != null &amp;&amp; dayProjectStatusSql !=''">
+                <![CDATA[  ${dayProjectStatusSql}  ]]>
+            </if>
+            <if test="inputSearchSql != null &amp;&amp; inputSearchSql !=''">
+                <![CDATA[  ${inputSearchSql}  ]]>
+            </if>
+            <![CDATA[
+            ) result
+            WHERE 1=1
+            ORDER BY ${str}
+            LIMIT #{recordsPerPage} OFFSET #{startRow}
+        ]]>
+    </select>
+
+    <select id="getInfoProject" parameterType="int" resultType="kr.co.hs.project.dto.InfoDTO">
+        <![CDATA[
+        SELECT *, (now_price - payment) AS remain
+        FROM (
+                 SELECT IFNULL((SELECT advance_amount
+                                FROM day_project
+                                WHERE pj_id = #{pjId}
+                                  AND use_yn = 'Y'
+                                ORDER BY dp_id DESC LIMIT 1),0) AS now_price,
+                        IFNULL((SELECT project_price
+                                FROM day_project
+                                WHERE pj_id = #{pjId}
+                                  and spent_type = 'default'
+                                  AND use_yn = 'Y' LIMIT 1),0)  AS first_price,
+                        IFNULL((SELECT SUM(project_price)
+                                FROM day_project
+                                WHERE pj_id = #{pjId}
+                                  and spent_type = 'deposit'
+                                  AND use_yn = 'Y'),
+                               0)                               AS add_sum,
+                        IFNULL((SELECT SUM(project_price)
+                                FROM day_project
+                                WHERE pj_id = #{pjId}
+                                  and spent_type = 'spent'
+                                  AND use_yn = 'Y'), 0)         AS payment
+             ) AS rs
+        ]]>
+    </select>
+
+    <select id="getInfoProjectByID" parameterType="kr.co.hs.project.dto.DayProjectDTO"
+            resultType="kr.co.hs.project.dto.DayProjectDTO">
+        <![CDATA[
+        SELECT title
+             , GET_DEPT_LEVEL_NAME(#{deptCd}, #{langCd})                                   AS dept_name
+             , GET_POSITION_NAME(#{positionCd}, #{langCd})                                 AS position_name
+             , GET_EMP_NAME(#{empCd}, #{langCd})                                           AS emp_name
+             , NOW()                                                                       AS reg_dt
+             , (IFNULL((SELECT advance_amount
+                        FROM day_project
+                        where pj_id = #{pjId}
+                          AND use_yn = 'Y'
+                        ORDER BY dp_id DESC LIMIT 1),0) - IFNULL((SELECT SUM(project_price)
+                                                                  FROM day_project
+                                                                  WHERE pj_id = #{pjId}
+                                                                    and spent_type = 'spent'
+                                                                    AND use_yn = 'Y'), 0)) AS remain_amount
+        FROM project
+        WHERE pj_id = #{pjId}
+          AND use_yn = 'Y'
+        ]]>
+    </select>
+
+    <insert id="InsertDayProject" parameterType="kr.co.hs.project.dto.DayProjectDTO">
+        <![CDATA[
+        INSERT INTO day_project
+        ( pj_id
+        , lang_cd
+        , emp_cd
+        , dept_change_history_id
+        , dept_cd
+        , position_cd
+        , spent_type
+        , advance_amount
+        , project_price
+        , remain_amount
+        , title
+        , day_project_status
+        , reg_dt
+        , use_yn)
+        VALUES (#{pjId}, #{langCd}, #{empCd}, #{deptChangeHistoryId}, #{deptCd}, #{positionCd}, #{spentType},
+                #{advanceAmount}, #{projectPrice}, #{remainAmount}, #{title}, #{dayProjectStatus}, now(), #{useYn})
+        ]]>
+    </insert>
+
+    <select id="selectMaxProjectId" resultType="int">
+        <![CDATA[
+        SELECT MAX(pj_id) AS num
+        FROM project
+        WHERE use_yn = 'Y'
+        ]]>
+    </select>
+
+    <select id="checkFistSpent" parameterType="kr.co.hs.project.dto.ProjectMainDTO" resultType="int">
+        <![CDATA[
+        SELECT COUNT(*) AS num
+        FROM day_project
+        WHERE pj_id = #{pjId}
+          AND use_yn = 'Y'
+          AND spent_type = 'spent'
+        ]]>
+    </select>
+
+    <insert id="InsertFirstDeposit" parameterType="kr.co.hs.project.dto.DayProjectDTO">
+        <![CDATA[
+        INSERT INTO day_project
+        ( pj_id
+        , lang_cd
+        , emp_cd
+        , dept_change_history_id
+        , dept_cd
+        , position_cd
+        , spent_type
+        , advance_amount
+        , project_price
+        , remain_amount
+        , title
+        , day_project_status
+        , reg_dt
+        , use_yn)
+        VALUES ( #{pjId}
+               , #{langCd}
+               , #{empCd}
+               , #{deptChangeHistoryId}
+               , #{deptCd}
+               , #{positionCd}
+               , #{spentType}
+               , #{advanceAmount}
+               , #{projectPrice}
+               , #{remainAmount}
+               , #{title}
+               , #{dayProjectStatus}
+               , now()
+               , #{useYn})
+        ]]>
+    </insert>
+
+    <select id="countDefault" parameterType="int" resultType="int">
+        <![CDATA[
+        SELECT COUNT(dp_id) AS rs
+        FROM day_project
+        WHERE pj_id = #{pjId}
+          AND use_yn = 'Y'
+          AND spent_type = 'default'
+        ]]>
+    </select>
+
+    <select id="selectInfoDayProjectByID" parameterType="kr.co.hs.project.dto.DayProjectDTO"
+            resultType="kr.co.hs.project.dto.DayProjectDTO">
+        <![CDATA[
+        SELECT dp.dp_id,
+               dp.pj_id,
+               dp.lang_cd,
+               dp.emp_cd,
+               dp.dept_change_history_id,
+               dp.dept_cd,
+               dp.position_cd,
+               dp.spent_type as type,
+               (SELECT GET_CODE_NAME(c_code_id, #{langCd})
+                FROM c_code
+                WHERE c_code_value = dp.spent_type
+                  AND c_code = 'spentstatus'
+                  and use_yn = 'Y')                         AS spent_type,
+               dp.advance_amount,
+               dp.project_price,
+               dp.remain_amount,
+               dp.title,
+               dp.day_project_status,
+               dp.reg_dt,
+               dp.use_yn,
+               p.title                                      AS project_name,
+               GET_DEPT_LEVEL_NAME(dp.dept_cd, #{langCd})   AS dept_name,
+               GET_POSITION_NAME(dp.position_cd, #{langCd}) AS position_name,
+               GET_EMP_NAME(dp.emp_cd, #{langCd})           AS emp_name
+        FROM day_project dp
+                 JOIN project p ON dp.pj_id = p.pj_id
+        WHERE dp_id = #{dpId}
+          AND dp.use_yn = 'Y'
+        ]]>
+    </select>
+
+    <update id="editSpentDayProject" parameterType="kr.co.hs.project.dto.DayProjectDTO">
+        <![CDATA[
+        UPDATE day_project
+        SET title=#{title}
+        WHERE dp_id = #{dpId}
+        ]]>
+    </update>
+
+    <update id="editDepositDayProject" parameterType="kr.co.hs.project.dto.DayProjectDTO">
+        <![CDATA[
+        UPDATE day_project
+        SET title=#{title},
+            project_price=#{projectPrice}
+        WHERE dp_id = #{dpId};
+        UPDATE day_project
+        SET advance_amount=advance_amount + (${differAmount}),
+            remain_amount=remain_amount + (${differAmount})
+        WHERE pj_id = #{pjId}
+          AND dp_id >= #{dpId}
+          AND use_yn = 'Y'
+        ]]>
+    </update>
+
+    <update id="deleteDayProjectDeposit" parameterType="kr.co.hs.project.dto.DayProjectDTO">
+        <![CDATA[
+        UPDATE day_project
+        SET use_yn='N'
+        WHERE dp_id = #{dpId};
+        UPDATE day_project
+        SET advance_amount=advance_amount - (${projectPrice}),
+            remain_amount=remain_amount - (${projectPrice})
+        WHERE pj_id = #{pjId}
+          AND dp_id >= #{dpId}
+          AND use_yn = 'Y'
+        ]]>
+    </update>
+
+    <update id="deleteDayProjectSpent" parameterType="kr.co.hs.project.dto.DayProjectDTO">
+        <![CDATA[
+        UPDATE day_project_item
+        SET use_yn='N'
+        WHERE dp_id = #{dpId};
+        UPDATE day_project
+        SET use_yn='N'
+        WHERE dp_id = #{dpId};
+        UPDATE day_project
+        SET remain_amount=remain_amount + (${projectPrice})
+        WHERE pj_id = #{pjId}
+          AND dp_id >= #{dpId}
+          AND use_yn = 'Y'
+        ]]>
+    </update>
+
+    <select id="sumMoneyItem" parameterType="int" resultType="long">
+        <![CDATA[
+        SELECT IFNULL(SUM(amount), 0) AS amount
+        FROM day_project_item
+        WHERE use_yn = 'Y'
+          AND dp_id = #{dpId}
+        ]]>
+    </select>
+
+    <select id="getDayProjectItemList" parameterType="kr.co.hs.project.dto.DayProjectItemDTO"
+            resultType="kr.co.hs.project.dto.DayProjectItemDTO">
+        <![CDATA[
+        SELECT GET_LOCATION_STATUS(cc.c_code_name, #{langCd}) AS spent_type
+                ,
+               dpi.*
+                ,
+               GET_DEPT_LEVEL_NAME(dept_cd, #{langCd})        AS dept_name
+                ,
+               GET_POSITION_NAME(position_cd, #{langCd})      AS position_name,
+               GET_EMP_NAME(emp_cd, #{langCd})                AS emp_name,
+               (
+                   SELECT COUNT(dpit.dpi_id)
+                   FROM day_project_item_translation dpit
+                            left JOIN translation t on dpit.translation_id = t.translation_id
+                   WHERE dpi_id = dpi.dpi_id
+                     AND t.use_yn = 'Y'
+               )                                              AS translation_status,
+               ROW_NUMBER()                                      OVER (ORDER BY dpi.dpi_id asc) AS ROWNUM
+        FROM day_project_item dpi
+                 LEFT JOIN c_code cc ON cc.c_code_value = dpi.spent_type AND cc.c_code = 'spentstatus'
+        WHERE dpi.use_yn = 'Y'
+          AND dp_id = #{dpId}
+
+        ORDER BY ${str} LIMIT #{recordsPerPage}
+        OFFSET #{startRow}
+        ]]>
+    </select>
+
+    <select id="getSumRowDayProjectItem" parameterType="kr.co.hs.project.dto.DayProjectItemDTO" resultType="int">
+        <![CDATA[
+        SELECT count(day_project_item.dpi_id) as sum_row
+        FROM day_project_item
+        WHERE use_yn = 'Y'
+          AND dp_id = #{dpId}
+        ]]>
+    </select>
+
+    <select id="getDayProjectItemListExcelExport" parameterType="kr.co.hs.project.dto.DayProjectItemDTO"
+            resultType="kr.co.hs.project.dto.DayProjectItemDTO">
+        <![CDATA[
+        SELECT *,
+               ROW_NUMBER() OVER (ORDER BY dpi_id asc) AS ROWNUM
+        FROM
+            (
+                SELECT GET_LOCATION_STATUS(cc.c_code_name, #{langCd}) AS spent_type
+                     , ROW_NUMBER() OVER (ORDER BY dpi.dpi_id ASC) as dpi_id
+                     , 'translate' AS type
+                     , dpi.dp_id
+                     , dpi.lang_cd
+                     , dpi.emp_cd
+                     , dpi.dept_change_history_id
+                     , dpi.dept_cd
+                     , dpi.position_cd
+                     , case
+                           when dpt.contents IS NULL
+                               then "-"
+                           ELSE dpt.contents
+                    END AS product_name
+                     , dpi.price
+                     , dpi.ea
+                     , dpi.amount
+                     , dpi.check_status
+                     , dpi.img_path
+                     , dpi.reg_dt
+                     , dpi.use_yn
+                     , GET_DEPT_LEVEL_NAME(dept_cd, #{langCd})        AS dept_name
+                     ,  GET_POSITION_NAME(position_cd, #{langCd})      AS position_name
+                     , GET_EMP_NAME(emp_cd, #{langCd})                AS emp_name
+                     ,(
+                    SELECT COUNT(dpit.dpi_id)
+                    FROM day_project_item_translation dpit
+                             left JOIN translation t on dpit.translation_id = t.translation_id
+                    WHERE dpi_id = dpi.dpi_id
+                      AND t.use_yn = 'Y'
+                )                                              AS translation_status
+                FROM day_project_item dpi
+                         LEFT JOIN (
+                    SELECT dpt.dpi_id, trs.contents FROM day_project_item_translation dpt
+                                                             JOIN translation trs ON trs.translation_id = dpt.translation_id AND trs.use_yn = 'Y'
+                    GROUP BY dpt.dpi_id
+                ) dpt ON dpt.dpi_id = dpi.dpi_id
+                         LEFT JOIN c_code cc ON cc.c_code_value = dpi.spent_type AND cc.c_code = 'spentstatus'
+                WHERE dpi.use_yn = 'Y'
+                  AND dp_id = #{dpId}
+
+                UNION
+
+                SELECT GET_LOCATION_STATUS(cc.c_code_name, #{langCd}) AS spent_type
+                    , ROW_NUMBER() OVER (ORDER BY dpi.dpi_id ASC) as dpi_id
+                    , ROW_NUMBER() OVER (ORDER BY dpi.dpi_id ASC) AS type
+                     , dpi.dp_id
+                     , dpi.lang_cd
+                     , dpi.emp_cd
+                     , dpi.dept_change_history_id
+                     , dpi.dept_cd
+                     , dpi.position_cd
+                     , dpi.product_name
+                     , dpi.price
+                     , dpi.ea
+                     , dpi.amount
+                     , dpi.check_status
+                     , dpi.img_path
+                     , dpi.reg_dt
+                     , dpi.use_yn
+                     , GET_DEPT_LEVEL_NAME(dept_cd, #{langCd})        AS dept_name
+                     ,  GET_POSITION_NAME(position_cd, #{langCd})      AS position_name
+                     , GET_EMP_NAME(emp_cd, #{langCd})                AS emp_name
+                     ,(
+                    SELECT COUNT(dpit.dpi_id)
+                    FROM day_project_item_translation dpit
+                             left JOIN translation t on dpit.translation_id = t.translation_id
+                    WHERE dpi_id = dpi.dpi_id
+                      AND t.use_yn = 'Y'
+                )                                              AS translation_status
+                FROM day_project_item dpi
+                         LEFT JOIN c_code cc ON cc.c_code_value = dpi.spent_type AND cc.c_code = 'spentstatus'
+                WHERE dpi.use_yn = 'Y'
+                  AND dp_id = #{dpId}
+            ) result
+        where 1=1
+        ORDER BY ${str} LIMIT #{recordsPerPage}
+        OFFSET #{startRow}
+        ]]>
+    </select>
+
+    <insert id="insertDayProjectItem" parameterType="kr.co.hs.project.dto.DayProjectItemDTO">
+        <![CDATA[
+        INSERT INTO day_project_item(dp_id, lang_cd, emp_cd, dept_change_history_id, dept_cd, position_cd, product_name,
+                                     price, ea, amount, check_status, img_path, reg_dt, use_yn, spent_type)
+        VALUES (#{dpId}, #{langCd}, #{empCd}, #{deptChangeHistoryId}, #{deptCd}, #{positionCd}, #{productName},
+                #{price}, #{ea}, #{amount}, #{checkStatus}, #{imgPath}, now(), #{useYn}, #{spentType})
+        ]]>
+    </insert>
+
+    <update id="updateDayProjectItem" parameterType="kr.co.hs.project.dto.DayProjectItemDTO">
+        <![CDATA[
+        UPDATE day_project
+        SET project_price=project_price + (${amount})
+        WHERE dp_id = #{dpId};
+        UPDATE day_project
+        SET remain_amount=remain_amount - (${amount})
+        WHERE dp_id >= #{dpId}
+          AND pj_id = #{pjId}
+          AND use_yn = 'Y'
+        ]]>
+    </update>
+
+    <select id="getDayProjectItemByID" parameterType="kr.co.hs.project.dto.DayProjectItemDTO"
+            resultType="kr.co.hs.project.dto.DayProjectItemDTO">
+        <![CDATA[
+        SELECT dpi.*,
+               p.title                                                                     AS project_name,
+               dp.title                                                                    AS title,
+               GET_DEPT_LEVEL_NAME(dpi.dept_cd, #{langCd})                                 AS dept_name,
+               GET_POSITION_NAME(dpi.position_cd, #{langCd})                               AS position_name,
+               GET_EMP_NAME(dpi.emp_cd, #{langCd})                                         AS emp_name,
+               (IFNULL((SELECT advance_amount
+                        FROM day_project
+                        where pj_id = p.pj_id
+                          AND use_yn = 'Y'
+                        ORDER BY dp_id DESC LIMIT 1),0) - IFNULL((SELECT SUM(project_price)
+                                                                  FROM day_project
+                                                                  WHERE pj_id = p.pj_id
+                                                                    and spent_type = 'spent'
+                                                                    AND use_yn = 'Y'), 0)) AS remain_amount,
+               p.pj_id                                                                     AS pj_id
+        FROM day_project_item dpi
+                 JOIN day_project dp ON dpi.dp_id = dp.dp_id
+                 JOIN project p ON p.pj_id = dp.pj_id
+        WHERE dpi.dpi_id = #{dpiId}
+          AND dpi.use_yn = 'Y'
+        ]]>
+    </select>
+
+    <update id="updateSpentItem" parameterType="kr.co.hs.project.dto.DayProjectItemDTO">
+        <![CDATA[
+        UPDATE day_project_item
+        SET product_name=#{productName},
+            price=#{price},
+            ea=#{ea},
+            amount=#{amount},
+            img_path=#{imgPath},
+            spent_type=#{spentType}
+        WHERE dpi_id = #{dpiId}
+        ]]>
+    </update>
+
+    <update id="deleteDayProjectItem" parameterType="kr.co.hs.project.dto.DayProjectItemDTO">
+        <![CDATA[
+        UPDATE day_project_item
+        SET use_yn='N'
+        WHERE dpi_id = #{dpiId};
+        UPDATE day_project
+        SET project_price=project_price - (${amount})
+        WHERE dp_id = #{dpId};
+        UPDATE day_project
+        SET remain_amount=remain_amount + (${amount})
+        WHERE dp_id >= #{dpId}
+          AND pj_id = #{pjId}
+          AND use_yn = 'Y'
+        ]]>
+    </update>
+
+    <update id="approveDayProjectItem" parameterType="kr.co.hs.project.dto.DayProjectItemDTO">
+        <![CDATA[
+        UPDATE day_project_item
+        SET check_status='Y'
+        WHERE dpi_id = #{dpiId};
+        ]]>
+    </update>
+
+    <select id="selectCountDayProjectItemApprove" parameterType="kr.co.hs.project.dto.DayProjectItemDTO"
+            resultType="Integer">
+        <![CDATA[
+        SELECT COUNT(*) AS sl
+        FROM day_project_item
+        WHERE dp_id = #{dpId}
+          AND check_status = 'N'
+          AND use_yn = 'Y'
+        ]]>
+    </select>
+
+    <update id="updateDayProjectStatusByItem" parameterType="kr.co.hs.project.dto.DayProjectItemDTO">
+        <![CDATA[
+        UPDATE day_project
+        SET day_project_status='Y'
+        WHERE dp_id = #{dpId}
+          AND use_yn = 'Y'
+        ]]>
+    </update>
+
+    <update id="approveDayProject" parameterType="kr.co.hs.project.dto.DayProjectDTO">
+        <![CDATA[
+        UPDATE day_project
+        SET day_project_status='Y'
+        WHERE dp_id = #{dpId}
+          AND use_yn = 'Y';
+        UPDATE day_project_item
+        SET check_status='Y'
+        WHERE dp_id = #{dpId}
+          AND use_yn = 'Y';
+        ]]>
+    </update>
+
+    <select id="selectListFile" parameterType="Integer" resultType="kr.co.hs.common.dto.FileUploadDTO">
+        <![CDATA[
+        SELECT ROW_NUMBER() OVER (ORDER BY files.file_id asc) AS ROWNUM,files.*
+        FROM files
+                 JOIN day_project_file dpf ON files.file_id = dpf.file_id
+        WHERE dpf.dp_id = #{dpId}
+          AND file_status = 'real'
+        ]]>
+    </select>
+
+    <insert id="insertTempFile" parameterType="kr.co.hs.common.dto.FileUploadDTO">
+        <![CDATA[
+        INSERT INTO files
+        ( dept_cd
+        , position_cd
+        , emp_cd
+        , file_type
+        , file_path
+        , file_name
+        , file_hash_name
+        , file_ext
+        , file_size
+        , reg_dt
+        , file_status)
+        VALUES ( #{deptCd}
+               , #{positionCd}
+               , #{empCd}
+               , #{fileType}
+               , #{filePath}
+               , #{fileName}
+               , #{fileHashName}
+               , #{fileExt}
+               , #{fileSize}
+               , now()
+               , #{fileStatus})
+        ]]>
+    </insert>
+
+    <delete id="deleteAllTempFile" parameterType="Integer">
+        DELETE
+        FROM files
+        WHERE emp_cd = #{empCd}
+          AND file_type = 'project'
+          AND file_status = 'temp'
+    </delete>
+
+    <delete id="deleteOneTempFile" parameterType="hashmap">
+        DELETE
+        FROM files
+        WHERE emp_cd = #{empCd}
+          AND file_type = 'project'
+          AND file_status = 'temp'
+          AND CONCAT(file_path, file_hash_name) = #{filePathName}
+    </delete>
+
+    <delete id="deleteRealFile" parameterType="Integer">
+        DELETE
+        FROM day_project_file
+        WHERE file_id = #{fileId};
+        DELETE
+        FROM files
+        WHERE file_id = #{fileId}
+    </delete>
+
+    <insert id="insertRealFileEdit" parameterType="kr.co.hs.project.dto.DayProjectDTO">
+        <![CDATA[
+        INSERT INTO day_project_file(dp_id, file_id)
+        SELECT #{dpId} AS dp_id, file_id
+        FROM files
+        WHERE emp_cd = #{empCd}
+          AND file_type = 'project'
+          AND file_status = 'temp'
+        ]]>
+    </insert>
+
+    <update id="updateRealFile" parameterType="kr.co.hs.project.dto.DayProjectDTO">
+        <![CDATA[
+        UPDATE files
+        SET file_path=REPLACE(file_path, 'temp_file', 'real_file'),
+            file_status='real'
+        WHERE emp_cd = #{empCd}
+          AND file_type = 'project'
+          AND file_status = 'temp'
+        ]]>
+    </update>
+
+    <select id="getEmpProjectLeaderCD" parameterType="kr.co.hs.project.dto.ProjectLeaderAuthDTO" resultType="int">
+        <![CDATA[
+        SELECT emp_cd
+        FROM project_leader_auth
+        WHERE pj_id = #{pjId}
+          AND leader_type = 1
+        ORDER BY history_num DESC LIMIT 1
+        ]]>
+    </select>
+
+    <select id="getEmpAccountingLeaderCD" parameterType="kr.co.hs.project.dto.ProjectLeaderAuthDTO" resultType="int">
+        <![CDATA[
+        SELECT emp_cd
+        FROM project_leader_auth
+        WHERE pj_id = #{pjId}
+          AND leader_type = 2
+        ORDER BY history_num DESC LIMIT 1
+        ]]>
+    </select>
+
+    <select id="selectDeltailProjectId" parameterType="kr.co.hs.project.dto.ProjectMainDTO" resultType="kr.co.hs.project.dto.ProjectMainDTO">
+        SELECT
+            GET_EMP_NAME(pla.emp_cd, #{langCd}) AS leader_project_name
+             , GET_EMP_NAME(plaa.emp_cd, #{langCd}) AS leader_accounting_name
+             , CASE
+                   when pt.translation_id IS NOT NULL
+                       then tr.contents
+                   ELSE
+                       dp.title
+            END AS title
+        FROM project dp
+                 LEFT JOIN project_translation pt ON pt.pj_id = dp.pj_id
+                 LEFT JOIN translation tr ON tr.translation_id = pt.translation_id
+                 LEFT JOIN project_leader_auth pla ON pla.pj_id = dp.pj_id AND pla.leader_type = 1 AND pla.current_yn = 'Y'
+                 LEFT JOIN project_leader_auth plaa ON plaa.pj_id = dp.pj_id AND plaa.leader_type = 2 AND plaa.current_yn = 'Y'
+        WHERE dp.pj_id = #{pjId}
+        GROUP BY dp.pj_id
+    </select>
+
+    <select id="selectDetailDayProjectExcelExport" parameterType="kr.co.hs.project.dto.DayProjectDTO" resultType="kr.co.hs.project.dto.DayProjectDTO">
+        <![CDATA[
+        SELECT
+            case
+                when trs.contents IS null
+                    then dp.title
+                ELSE
+                    trs.contents
+                END AS title
+             , dp.reg_dt
+        FROM day_project dp
+                 LEFT JOIN
+             (
+                 SELECT dpt.dp_id, trs.contents
+                 FROM day_project_translation dpt
+                          JOIN translation trs ON trs.translation_id = dpt.translation_id AND trs.use_yn = 'Y'
+             ) trs ON trs.dp_id = dp.dp_id
+        WHERE dp.dp_id = #{dpId}
+
+        ]]>
+    </select>
+
+    <select id="selectSummaryFileByID" parameterType="kr.co.hs.project.dto.DayProjectDTO" resultType="kr.co.hs.common.dto.FileUploadDTO">
+        <![CDATA[
+        SELECT FILES.* FROM DAY_PROJECT DP
+                                JOIN DAY_PROJECT_FILE DPF ON DP.DP_ID=DPF.DP_ID
+                                JOIN FILES ON FILES.FILE_ID=DPF.FILE_ID
+        WHERE DP.DP_ID=#{dpId}
+        UNION
+        SELECT * FROM FILES WHERE EMP_CD=#{empCd} AND FILE_TYPE='project' AND FILE_STATUS='temp'
+        ]]>
+    </select>
+
+    <insert id="scheduleAutoInsert">
+        <![CDATA[
+            INSERT INTO day_project(pj_id,lang_cd,emp_cd,dept_change_history_id,dept_cd,position_cd,spent_type,advance_amount,project_price,remain_amount,title,day_project_status,reg_dt,use_yn)
+            SELECT
+                dp.pj_id,
+                dp.lang_cd,
+                dp.emp_cd,
+                dp.dept_change_history_id,
+                dp.dept_cd,
+                dp.position_cd,
+                'spent' AS spent_type,
+                dp.advance_amount,
+                0 AS project_price,
+                dp.remain_amount,
+                CONCAT('Chi tiêu ngày ',CURDATE()) AS title,
+                'N' AS day_project_status,
+                NOW() AS reg_dt,
+                dp.use_yn
+            FROM day_project dp
+                     JOIN project p ON dp.pj_id=p.pj_id
+            WHERE dp.dp_id IN
+                  (
+                      SELECT MAX(dp_id) AS dp_id FROM day_project WHERE use_yn='Y' GROUP BY pj_id
+                  )
+              AND p.use_yn='Y'
+              AND p.project_start_date <= NOW() AND NOW() <= p.project_end_date
+        ]]>
+    </insert>
+</mapper>

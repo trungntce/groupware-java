@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//ibatis.apache.org//DTD Mapper 3.0//EN" "http://ibatis.apache.org/dtd/ibatis-3-mapper.dtd">
+
+<mapper namespace="ApprovalTranslateHistory">
+
+    <select id="selectCount" parameterType="kr.co.hs.approval.dto.ApprovalSearchDTO" resultType="java.lang.Integer">
+        SELECT COUNT(AP.APPROVAL_ID)
+        FROM APPROVAL AS AP
+        LEFT JOIN APPROVAL_SIGN_LINE ASL ON AP.APPROVAL_ID = ASL.APPROVAL_ID
+        INNER JOIN APPROVAL_TRANSLATION APT ON AP.APPROVAL_ID = APT.APPROVAL_ID
+        INNER JOIN TRANSLATION T ON APT.TRANSLATION_ID = T.TRANSLATION_ID
+        WHERE AP.USE_YN = 'Y'
+        <if test="translateEmpCd != null &amp;&amp; translateEmpCd !='' "> AND T.EMP_CD = #{translateEmpCd} </if>
+    </select>
+
+    <select id="selectList" parameterType="kr.co.hs.approval.dto.ApprovalSearchDTO" resultType="kr.co.hs.approval.dto.ApprovalDTO">
+        SELECT
+            AP.APPROVAL_ID,
+            AP.FORM_ID,
+            AP.TITLE,
+            AP.CONTENTS,
+            AP.APPROVAL_STATUS,
+            AP.APPROVAL_STEP,
+            AP.USE_YN,
+            AP.CREATE_DATE,
+            AP.CREATE_ID,
+            AP.EMP_CD,
+            AP.MODIFIED_DATE,
+            AP.DEPT_CHANGE_HISTORY_ID,
+            AP.DEPT_CD,
+            GET_DEPT_NAME(AP.DEPT_CD, #{langCd}) AS DEPT_NAME,
+            AP.POSITION_CD,
+            GET_POSITION_NAME(AP.POSITION_CD, #{langCd}) AS POSITION_NAME,
+            ASL.APPROVAL_ROLE,
+            ASL.SIGN_LINE_ID,
+            ASL.EMP_ID AS SIGN_EMP_ID,
+            ASL.EMP_CD AS SIGN_EMP_CD,
+            ASL.STEP AS SIGN_STEP,
+            ASL.APPROVAL_STATUS AS APPROVAL_STATUS_SIGN,
+            APT.TRANSLATION_ID,
+            GET_EMP_NAME(T.EMP_CD, #{langCd}) AS TRANSLATOR_NAME
+        FROM APPROVAL AS AP
+        LEFT JOIN APPROVAL_SIGN_LINE ASL ON AP.APPROVAL_ID = ASL.APPROVAL_ID
+        INNER JOIN APPROVAL_TRANSLATION APT ON AP.APPROVAL_ID = APT.APPROVAL_ID
+        INNER JOIN TRANSLATION T ON APT.TRANSLATION_ID = T.TRANSLATION_ID
+        WHERE AP.USE_YN = 'Y'
+        <if test="translateEmpCd != null &amp;&amp; translateEmpCd !='' "> AND T.EMP_CD = #{translateEmpCd} </if>
+        <choose>
+            <when test="orderByColumn != null &amp;&amp; orderByColumn != ''"> ORDER BY ${orderByColumn} ${orderByType} </when>
+            <otherwise> ORDER BY  AP.CREATE_DATE DESC </otherwise>
+        </choose>
+        LIMIT #{start}, #{limit}
+    </select>
+
+</mapper>

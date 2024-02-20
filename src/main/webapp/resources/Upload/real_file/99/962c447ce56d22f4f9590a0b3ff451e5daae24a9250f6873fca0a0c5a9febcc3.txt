@@ -1,0 +1,64 @@
+//controller
+        //export Theo Ngay
+        public FileResult ExportTheoNgay(string datepicker)
+        {
+            var dao = new A_ReportPartDao();
+            if (datepicker == null)
+            {
+                datepicker = DateTime.Now.ToString("MM/dd/yyyy");
+            }
+
+            var model = dao.ListTongHopNgay(datepicker);
+
+            DataTable dt = new DataTable("Data");
+
+            dt.Columns.AddRange(new DataColumn[9]
+                        {
+                        new DataColumn("Id"),
+                        new DataColumn("Part No"),
+                        new DataColumn("Part Name"),
+                        new DataColumn("Đơn vị"),
+                        new DataColumn("Tồn hôm trước"),
+                        new DataColumn("Tổng input"),
+                        new DataColumn("Tổng ouput"),
+                        new DataColumn("Balance"),
+                        new DataColumn("Actual")
+                        });
+
+            foreach (var i in model)
+            {
+                dt.Rows.Add(i.ID, i.CodePart, i.NamePart, "Pcs", i.TON_HOM_TRUOC, i.TOTAL_IN, i.TOTAL_OUT, i.BALANCE, i.ACTUAL);
+            }
+
+
+            using (XLWorkbook wb = new XLWorkbook())
+            {
+                wb.Worksheets.Add(dt);
+                using (MemoryStream stream = new MemoryStream())
+                {
+                    wb.SaveAs(stream);
+                    var time = DateTime.Now.Second;
+                    return File(stream.ToArray(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "REPORT_" + datepicker + "_" + time + ".xlsx");
+                }
+            }
+
+
+
+
+
+        }
+		
+		
+		
+//view
+
+<script type="text/javascript">
+    function getTheoNgay() {
+        $.ajaxSetup({ cache: false });
+        var datepicker = $("#datepicker").val();
+
+        var url = "/Pregnant/A_ReportPart/ExportTheoNgay?datepicker=" + datepicker;
+        window.location.href = url;
+
+    }
+</script>

@@ -1,0 +1,534 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//ibatis.apache.org//DTD Mapper 3.0//EN" "http://ibatis.apache.org/dtd/ibatis-3-mapper.dtd">
+
+<mapper namespace="Attendance">
+    <!--    select list board-->
+    <select id="selectListAtt" parameterType="hashmap" resultType="kr.co.hs.attendace.dto.AttendanceDTO">
+        <![CDATA[
+        SELECT *
+                ,ROW_NUMBER() OVER (ORDER BY checkin_time desc) AS ROWNUM
+        FROM
+        (
+            SELECT attendance_id
+                    ,emp_cd
+                    ,dept_change_history_id
+                    ,date_check
+                    ,IFNULL(checkin_time,'---') AS checkin_time
+                    ,IFNULL(checkout_time,'---') AS checkout_time
+                    ,IFNULL(reg_ip,'---') AS reg_ip
+                  ,GET_DEPT_LEVEL_NAME
+                    ((
+                        SELECT DCH.DEPT_CD
+                        FROM DEPT_CHANGE_HISTORY DCH
+                        WHERE DCH.DEPT_CHANGE_HISTORY_ID = a.dept_change_history_id
+                        ), #{langCd}
+                    ) AS dept_name
+                  ,GET_EMP_NAME(emp_cd, #{langCd}) AS emp_name
+            FROM attendance a
+            WHERE  CONVERT(date_check,DATE)=CONVERT(#{startdate},DATE)
+            ]]>
+            <if test="txtSearch != null &amp;&amp; txtSearch !=''">
+                AND CONCAT(attendance_id
+                ,GET_EMP_NAME(emp_cd,#{langCd}),date_check,IFNULL(checkin_time,'---'),IFNULL(checkout_time,'---'),IFNULL(reg_ip,'---'))
+                LIKE CONCAT('%',#{txtSearch},'%' )
+            </if>
+            <if test="deptSearch != null &amp;&amp; deptSearch !=''">
+                AND GET_DEPT_LEVEL_NAME((SELECT DCH.DEPT_CD FROM DEPT_CHANGE_HISTORY DCH WHERE DCH.DEPT_CHANGE_HISTORY_ID = a.dept_change_history_id), #{langCd}) LIKE CONCAT('%',#{deptSearch},'%' )
+            </if>
+            <![CDATA[
+            UNION
+            select * from (
+                SELECT 1 AS attendance_id
+                        , emp_cd
+                        , dept_cd AS dept_change_history_id
+                        , #{startdate} as date_check
+                        , '---' AS checkin_time
+                        , '---' AS checkout_time
+                        , '---' AS reg_ip
+                        , GET_DEPT_LEVEL_NAME(dept_cd, #{langCd}) AS dept_name
+                        , GET_EMP_NAME(emp_cd, #{langCd}) AS emp_name
+                FROM emp
+                WHERE use_yn = 'Y'
+                AND emp_cd NOT IN
+                    (
+                        SELECT emp_cd
+                        FROM attendance a
+                        WHERE  CONVERT(date_check,DATE)=CONVERT(#{startdate},DATE)
+                    )
+                AND emp_parent_cd is NULL
+            ) resultmain where 1=1
+        ]]>
+        <if test="txtSearch != null &amp;&amp; txtSearch !=''">
+            AND CONCAT(GET_EMP_NAME(emp_cd,#{langCd}),date_check,IFNULL(checkin_time,'---'),IFNULL(checkout_time,'---'),IFNULL(reg_ip,'---'))
+            LIKE CONCAT('%',#{txtSearch},'%' )
+        </if>
+        <if test="deptSearch != null &amp;&amp; deptSearch !=''">
+            AND GET_DEPT_LEVEL_NAME(dept_change_history_id, #{langCd}) LIKE CONCAT('%',#{deptSearch},'%' )
+        </if>
+        <![CDATA[
+        ) result
+        WHERE 1=1
+        ORDER BY ${str}
+        LIMIT #{recordsPerPage} OFFSET #{startRow}
+        ]]>
+    </select>
+
+    <select id="getSumRowAtt" parameterType="hashmap" resultType="int">
+        <![CDATA[
+        SELECT count(*)
+        FROM
+        (
+            SELECT attendance_id
+                    ,emp_cd
+                    ,dept_change_history_id
+                    ,date_check
+                    ,IFNULL(checkin_time,'---') AS checkin_time
+                    ,IFNULL(checkout_time,'---') AS checkout_time
+                    ,IFNULL(reg_ip,'---') AS reg_ip
+                  ,GET_DEPT_LEVEL_NAME
+                    ((
+                        SELECT DCH.DEPT_CD
+                        FROM DEPT_CHANGE_HISTORY DCH
+                        WHERE DCH.DEPT_CHANGE_HISTORY_ID = a.dept_change_history_id
+                        ), #{langCd}
+                    ) AS dept_name
+                  ,GET_EMP_NAME(emp_cd, #{langCd}) AS emp_name
+            FROM attendance a
+            WHERE  CONVERT(date_check,DATE)=CONVERT(#{startdate},DATE)
+            ]]>
+        <if test="txtSearch != null &amp;&amp; txtSearch !=''">
+            AND CONCAT(attendance_id
+            ,GET_EMP_NAME(emp_cd,#{langCd}),date_check,IFNULL(checkin_time,'---'),IFNULL(checkout_time,'---'),IFNULL(reg_ip,'---'))
+            LIKE CONCAT('%',#{txtSearch},'%' )
+        </if>
+        <if test="deptSearch != null &amp;&amp; deptSearch !=''">
+            AND GET_DEPT_LEVEL_NAME((SELECT DCH.DEPT_CD FROM DEPT_CHANGE_HISTORY DCH WHERE DCH.DEPT_CHANGE_HISTORY_ID = a.dept_change_history_id), #{langCd}) LIKE CONCAT('%',#{deptSearch},'%' )
+        </if>
+        <![CDATA[
+            UNION
+            select * from (
+                SELECT 1 AS attendance_id
+                        , emp_cd
+                        , dept_cd AS dept_change_history_id
+                        , #{startdate} as date_check
+                        , '---' AS checkin_time
+                        , '---' AS checkout_time
+                        , '---' AS reg_ip
+                        , GET_DEPT_LEVEL_NAME(dept_cd, #{langCd}) AS dept_name
+                        , GET_EMP_NAME(emp_cd, #{langCd}) AS emp_name
+                FROM emp
+                WHERE use_yn = 'Y'
+                AND emp_cd NOT IN
+                    (
+                        SELECT emp_cd
+                        FROM attendance a
+                        WHERE  CONVERT(date_check,DATE)=CONVERT(#{startdate},DATE)
+                    )
+                AND emp_parent_cd is NULL
+            ) resultmain where 1=1
+        ]]>
+        <if test="txtSearch != null &amp;&amp; txtSearch !=''">
+            AND CONCAT(GET_EMP_NAME(emp_cd,#{langCd}),date_check,IFNULL(checkin_time,'---'),IFNULL(checkout_time,'---'),IFNULL(reg_ip,'---'))
+            LIKE CONCAT('%',#{txtSearch},'%' )
+        </if>
+        <if test="deptSearch != null &amp;&amp; deptSearch !=''">
+            AND GET_DEPT_LEVEL_NAME(dept_change_history_id, #{langCd}) LIKE CONCAT('%',#{deptSearch},'%' )
+        </if>
+        <![CDATA[
+        ) result
+        WHERE 1=1
+        ]]>
+    </select>
+
+    <select id="selectMyAttendanceList" parameterType="hashmap" resultType="kr.co.hs.attendace.dto.AttendanceDTO">
+        <![CDATA[
+        SELECT attendance_id
+             , emp_cd
+             , dept_change_history_id
+             , date_check
+             , IFNULL(checkin_time, '---')     AS checkin_time
+             , IFNULL(checkout_time, '---')    AS checkout_time
+             , IFNULL(reg_ip, '---')           AS reg_ip
+             , GET_DEPT_LEVEL_NAME((SELECT DCH.DEPT_CD
+                                    FROM DEPT_CHANGE_HISTORY DCH
+                                    WHERE DCH.DEPT_CHANGE_HISTORY_ID = a.dept_change_history_id),
+                                   #{langCd})  AS dept_name
+             , GET_EMP_NAME(emp_cd, #{langCd}) AS emp_name,
+            ROW_NUMBER() OVER (ORDER BY date_check asc) AS ROWNUM
+        FROM attendance a
+        WHERE date_check >= CONVERT(#{startdate}, date)
+          AND date_check <= CONVERT(#{enddate}, date)
+          and emp_cd = #{empCd}
+        ]]>
+
+
+    </select>
+
+    <select id="summaryAttAdmin" parameterType="hashmap" resultType="kr.co.hs.attendace.dto.AttendanceSumDTO">
+        <![CDATA[
+        SET
+        @START_DATE =
+        #{startdate};
+        SET
+        @END_DATE =
+        #{enddate};
+        WITH TongSoNgay AS (
+            SELECT DATEDIFF(@END_DATE, @START_DATE) + 1 AS songay
+        ),
+             TongChuNhat AS (
+                 SELECT ROUND((
+                                                  (unix_timestamp(@END_DATE) - unix_timestamp(@START_DATE)) /
+                                                  (24 * 60 * 60)
+                                              - 7 + WEEKDAY(@START_DATE) - WEEKDAY(@END_DATE)
+                                  ) / 7)
+                            + if(WEEKDAY(@START_DATE) <= 6, 1, 0)
+                            + if(WEEKDAY(@END_DATE) >= 6, 1, 0) as Sundays
+             ),
+             NgayCty AS (
+                 SELECT (CAST((SELECT songay FROM TongSoNgay) AS DECIMAL) -
+                         CAST((SELECT Sundays FROM TongChuNhat) AS DECIMAL)) AS NgayCty
+             ),
+             total AS
+                 (
+                     SELECT emp_cd,
+                            GET_EMP_NAME(emp_cd, #{langCd})                  AS emp_name,
+                            GET_DEPT_LEVEL_NAME(DEPT_CD, #{langCd})          AS DEPT_NAME,
+                            GET_POSITION_NAME(position_cd, #{langCd})        AS position_name,
+                            (SELECT NgayCty FROM NgayCty)                    AS ngaycongty,
+                            (SELECT COUNT(*)
+                             FROM attendance
+                             WHERE emp_cd = emp.emp_cd
+                               AND (date_check >= CONVERT(@START_DATE, DATE) AND
+                                    date_check <= CONVERT(@END_DATE, DATE))
+                               AND reg_ip IS NOT null)                       AS ngaydilam,
+                            (SELECT COUNT(*)
+                             FROM attendance
+                             WHERE emp_cd = emp.emp_cd
+                               AND CONVERT(checkin_time, TIME) <= CONVERT('07:45:00', TIME)
+                               AND date_check >= CONVERT(@START_DATE, DATE)
+                               AND date_check <= CONVERT(@END_DATE, date))   AS disom,
+                            (SELECT COUNT(*)
+                             FROM attendance
+                             WHERE emp_cd = emp.emp_cd
+                               AND (CONVERT(checkin_time, TIME) > CONVERT('07:45:00', TIME) AND
+                                    CONVERT(checkin_time, TIME) <= CONVERT('08:05:00', TIME))
+                               AND (date_check >= CONVERT(@START_DATE, DATE) AND
+                                    date_check <= CONVERT(@END_DATE, DATE))) AS dungio,
+                            (SELECT COUNT(*)
+                             FROM attendance
+                             WHERE emp_cd = emp.emp_cd
+                               AND CONVERT(checkin_time, TIME) > CONVERT('08:05:00', TIME)
+                               AND (date_check >= CONVERT(@START_DATE, DATE) AND
+                                    date_check <= CONVERT(@END_DATE, DATE))) AS dimuon,
+                            (SELECT COUNT(*)
+                             FROM attendance
+                             WHERE emp_cd = emp.emp_cd
+                               AND CONVERT(checkout_time, TIME) < CONVERT('17:00:00', TIME) AND DAYNAME(date_check) !='Saturday'
+                               AND (date_check >= CONVERT(@START_DATE, DATE) AND
+                                    date_check <= CONVERT(@END_DATE, DATE))) AS vesom
+                     FROM emp where use_yn = 'Y'
+                 )
+        SELECT *,@ROWNUM := @ROWNUM + 1 AS ROWNUM, ngaycongty - ngaydilam AS vang
+        FROM total , (SELECT @ROWNUM :=0) TEMP
+        where 1=1
+        ]]>
+        <if test="txtSearch != null &amp;&amp; txtSearch !=''">
+            AND CONCAT(emp_cd,position_name,GET_EMP_NAME(emp_cd, #{langCd}),ngaycongty,ngaydilam,disom,dungio,dimuon,vesom,ngaycongty - ngaydilam)
+            LIKE CONCAT('%',#{txtSearch},'%' )
+        </if>
+        <if test="deptSearch != null &amp;&amp; deptSearch !=''">
+            AND DEPT_NAME LIKE CONCAT('%',#{deptSearch},'%' )
+        </if>
+        <![CDATA[
+            ORDER BY ${str}
+            LIMIT #{recordsPerPage} OFFSET #{startRow}
+        ]]>
+
+    </select>
+
+    <select id="SumrowSummaryAttAdmin" parameterType="hashmap" resultType="int">
+        <![CDATA[
+        SET
+        @START_DATE =
+        #{startdate};
+        SET
+        @END_DATE =
+        #{enddate};
+        WITH TongSoNgay AS (
+            SELECT DATEDIFF(@END_DATE, @START_DATE) + 1 AS songay
+        ),
+             TongChuNhat AS (
+                 SELECT ROUND((
+                                                  (unix_timestamp(@END_DATE) - unix_timestamp(@START_DATE)) /
+                                                  (24 * 60 * 60)
+                                              - 7 + WEEKDAY(@START_DATE) - WEEKDAY(@END_DATE)
+                                  ) / 7)
+                            + if(WEEKDAY(@START_DATE) <= 6, 1, 0)
+                            + if(WEEKDAY(@END_DATE) >= 6, 1, 0) as Sundays
+             ),
+             NgayCty AS (
+                 SELECT (CAST((SELECT songay FROM TongSoNgay) AS DECIMAL) -
+                         CAST((SELECT Sundays FROM TongChuNhat) AS DECIMAL)) AS NgayCty
+             ),
+             total AS
+                 (
+                     SELECT emp_cd,
+                            GET_EMP_NAME(emp_cd, #{langCd})                  AS emp_name,
+                            GET_DEPT_LEVEL_NAME(DEPT_CD, #{langCd})          AS DEPT_NAME,
+                            GET_POSITION_NAME(position_cd, #{langCd})        AS position_name,
+                            (SELECT NgayCty FROM NgayCty)                    AS ngaycongty,
+                            (SELECT COUNT(*)
+                             FROM attendance
+                             WHERE emp_cd = emp.emp_cd
+                               AND (date_check >= CONVERT(@START_DATE, DATE) AND
+                                    date_check <= CONVERT(@END_DATE, DATE))
+                               AND reg_ip IS NOT null)                       AS ngaydilam,
+                            (SELECT COUNT(*)
+                             FROM attendance
+                             WHERE emp_cd = emp.emp_cd
+                               AND CONVERT(checkin_time, TIME) <= CONVERT('07:45:00', TIME)
+                               AND date_check >= CONVERT(@START_DATE, DATE)
+                               AND date_check <= CONVERT(@END_DATE, date))   AS disom,
+                            (SELECT COUNT(*)
+                             FROM attendance
+                             WHERE emp_cd = emp.emp_cd
+                               AND (CONVERT(checkin_time, TIME) > CONVERT('07:45:00', TIME) AND
+                                    CONVERT(checkin_time, TIME) <= CONVERT('08:05:00', TIME))
+                               AND (date_check >= CONVERT(@START_DATE, DATE) AND
+                                    date_check <= CONVERT(@END_DATE, DATE))) AS dungio,
+                            (SELECT COUNT(*)
+                             FROM attendance
+                             WHERE emp_cd = emp.emp_cd
+                               AND CONVERT(checkin_time, TIME) > CONVERT('08:05:00', TIME)
+                               AND (date_check >= CONVERT(@START_DATE, DATE) AND
+                                    date_check <= CONVERT(@END_DATE, DATE))) AS dimuon,
+                            (SELECT COUNT(*)
+                             FROM attendance
+                             WHERE emp_cd = emp.emp_cd
+                               AND CONVERT(checkout_time, TIME) < CONVERT('17:00:00', TIME) AND DAYNAME(date_check) !='Saturday'
+                               AND (date_check >= CONVERT(@START_DATE, DATE) AND
+                                    date_check <= CONVERT(@END_DATE, DATE))) AS vesom
+                     FROM emp where use_yn = 'Y'
+                 )
+        SELECT count(*) sum_row
+        FROM total
+        where 1=1
+        ]]>
+        <if test="txtSearch != null &amp;&amp; txtSearch !=''">
+            AND CONCAT(emp_cd,position_name,GET_EMP_NAME(emp_cd, #{langCd}),ngaycongty,ngaydilam,disom,dungio,dimuon,vesom,ngaycongty - ngaydilam)
+            LIKE CONCAT('%',#{txtSearch},'%' )
+        </if>
+        <if test="deptSearch != null &amp;&amp; deptSearch !=''">
+            AND DEPT_NAME LIKE CONCAT('%',#{deptSearch},'%' )
+        </if>
+
+
+    </select>
+
+
+    <select id="summaryAttUser" parameterType="hashmap" resultType="kr.co.hs.attendace.dto.AttendanceSumDTO">
+        <![CDATA[
+        SET
+        @START_DATE =
+        #{startdate};
+        SET
+        @END_DATE =
+        #{enddate};
+        WITH TongSoNgay AS (
+            SELECT DATEDIFF(@END_DATE, @START_DATE) + 1 AS songay
+        ),
+             TongChuNhat AS (
+                 SELECT ROUND((
+                                                  (unix_timestamp(@END_DATE) - unix_timestamp(@START_DATE)) /
+                                                  (24 * 60 * 60)
+                                              - 7 + WEEKDAY(@START_DATE) - WEEKDAY(@END_DATE)
+                                  ) / 7)
+                            + if(WEEKDAY(@START_DATE) <= 6, 1, 0)
+                            + if(WEEKDAY(@END_DATE) >= 6, 1, 0) as Sundays
+             ),
+             NgayCty AS (
+                 SELECT (CAST((SELECT songay FROM TongSoNgay) AS DECIMAL) -
+                         CAST((SELECT Sundays FROM TongChuNhat) AS DECIMAL)) AS NgayCty
+             ),
+             total AS
+                 (
+                     SELECT emp_cd,
+                            GET_EMP_NAME(emp_cd, #{langCd})                  AS emp_name,
+                            GET_DEPT_LEVEL_NAME(DEPT_CD, #{langCd})          AS DEPT_NAME,
+                            GET_POSITION_NAME(position_cd, #{langCd})        AS position_name,
+                            (SELECT NgayCty FROM NgayCty)                    AS ngaycongty,
+                            (SELECT COUNT(*)
+                             FROM attendance
+                             WHERE emp_cd = emp.emp_cd
+                               AND (date_check >= CONVERT(@START_DATE, DATE) AND
+                                    date_check <= CONVERT(@END_DATE, DATE))
+                               AND reg_ip IS NOT null)                       AS ngaydilam,
+                            (SELECT COUNT(*)
+                             FROM attendance
+                             WHERE emp_cd = emp.emp_cd
+                               AND CONVERT(checkin_time, TIME) <= CONVERT('07:45:00', TIME)
+                               AND date_check >= CONVERT(@START_DATE, DATE)
+                               AND date_check <= CONVERT(@END_DATE, date))   AS disom,
+                            (SELECT COUNT(*)
+                             FROM attendance
+                             WHERE emp_cd = emp.emp_cd
+                               AND (CONVERT(checkin_time, TIME) > CONVERT('07:45:00', TIME) AND
+                                    CONVERT(checkin_time, TIME) <= CONVERT('08:05:00', TIME))
+                               AND (date_check >= CONVERT(@START_DATE, DATE) AND
+                                    date_check <= CONVERT(@END_DATE, DATE))) AS dungio,
+                            (SELECT COUNT(*)
+                             FROM attendance
+                             WHERE emp_cd = emp.emp_cd
+                               AND CONVERT(checkin_time, TIME) > CONVERT('08:05:00', TIME)
+                               AND (date_check >= CONVERT(@START_DATE, DATE) AND
+                                    date_check <= CONVERT(@END_DATE, DATE))) AS dimuon,
+                            (SELECT COUNT(*)
+                             FROM attendance
+                             WHERE emp_cd = emp.emp_cd
+                               AND CONVERT(checkout_time, TIME) < CONVERT('17:00:00', TIME) AND DAYNAME(date_check) !='Saturday'
+                               AND (date_check >= CONVERT(@START_DATE, DATE) AND
+                                    date_check <= CONVERT(@END_DATE, DATE))) AS vesom
+                     FROM emp
+                 )
+        SELECT *, ngaycongty - ngaydilam AS vang
+        FROM total
+        WHERE emp_cd = #{empCd}
+        ]]>
+    </select>
+
+
+    <select id="checkExist" parameterType="int" resultType="int">
+        <![CDATA[
+        SELECT COUNT(*) AS sl
+        FROM attendance
+        WHERE emp_cd = #{empCd}
+          AND date_check = CONVERT(NOW(), DATE)
+        ]]>
+    </select>
+    <select id="checkExistCheckIn" parameterType="int" resultType="int">
+        <![CDATA[
+        SELECT COUNT(*) AS sl
+        FROM attendance
+        WHERE emp_cd = #{empCd}
+          AND date_check = CONVERT(NOW(), DATE)
+          AND checkin_time IS not null
+        ]]>
+    </select>
+
+    <update id="updateCheckin" parameterType="hashmap">
+        UPDATE attendance
+        SET checkin_time=NOW(),
+            reg_ip=#{regIp}
+        WHERE date_check = CONVERT(NOW(), DATE)
+          AND emp_cd = #{empCd};
+        UPDATE EMP
+        SET LOCATION_STATUS = "1",
+            LOCATION_DATE = NOW(),
+            location_tran = '근무 중'
+        WHERE EMP_CD = #{empCd} and translation_yn = 'Y';
+
+    </update>
+
+    <update id="updateCheckOut" parameterType="hashmap">
+        UPDATE attendance
+        SET checkout_time=NOW(),
+            reg_ip=#{regIp}
+        WHERE date_check = CONVERT(NOW(), DATE)
+          AND emp_cd = #{empCd};
+        UPDATE EMP
+        SET LOCATION_STATUS = "4",
+            LOCATION_DATE = NOW(),
+        location_tran = '퇴근'
+        WHERE EMP_CD = #{empCd} and translation_yn = 'Y';
+    </update>
+
+    <insert id="insertAttendance" parameterType="kr.co.hs.attendace.dto.AttendanceDTO">
+        INSERT INTO attendance(emp_cd, dept_change_history_id, date_check, reg_ip)
+        VALUES (#{empCd}, #{deptChangeHistoryId}, CONVERT(NOW(), DATE), #{regIp})
+    </insert>
+    <select id="loadWorkingDay" parameterType="hashmap" resultType="kr.co.hs.attendace.dto.AttendanceDTO">
+        <![CDATA[
+        SELECT *,
+               GET_EMP_NAME(emp_cd, #{langCd}) AS emp_name,
+               GET_DEPT_LEVEL_NAME((SELECT DCH.DEPT_CD
+                                    FROM DEPT_CHANGE_HISTORY DCH
+                                    WHERE DCH.DEPT_CHANGE_HISTORY_ID = attendance.dept_change_history_id),
+                                   #{langCd})  AS dept_name
+        FROM attendance
+        WHERE emp_cd = #{empCd}
+          AND (date_check >= CONVERT(#{startdate}, DATE) AND date_check <= CONVERT(#{enddate}, DATE))
+          AND reg_ip IS NOT null
+        ORDER BY attendance_id desc
+        ]]>
+    </select>
+    <select id="loadEarlyDay" parameterType="hashmap" resultType="kr.co.hs.attendace.dto.AttendanceDTO">
+        <![CDATA[
+        SELECT *,
+               GET_EMP_NAME(emp_cd, #{langCd}) AS emp_name,
+               GET_DEPT_LEVEL_NAME((SELECT DCH.DEPT_CD
+                                    FROM DEPT_CHANGE_HISTORY DCH
+                                    WHERE DCH.DEPT_CHANGE_HISTORY_ID = attendance.dept_change_history_id),
+                                   #{langCd})  AS dept_name
+        FROM attendance
+        WHERE emp_cd = #{empCd}
+          AND CONVERT(checkin_time, TIME) <= CONVERT('07:45:00', TIME)
+          AND date_check >= CONVERT(#{startdate}, DATE)
+          AND date_check <= CONVERT(#{enddate}, date)
+          AND reg_ip IS NOT null
+        ORDER BY attendance_id DESC
+        ]]>
+    </select>
+    <select id="loadOntimeDay" parameterType="hashmap" resultType="kr.co.hs.attendace.dto.AttendanceDTO">
+        <![CDATA[
+        SELECT *,
+               GET_EMP_NAME(emp_cd, #{langCd}) AS emp_name,
+               GET_DEPT_LEVEL_NAME((SELECT DCH.DEPT_CD
+                                    FROM DEPT_CHANGE_HISTORY DCH
+                                    WHERE DCH.DEPT_CHANGE_HISTORY_ID = attendance.dept_change_history_id),
+                                   #{langCd})  AS dept_name
+        FROM attendance
+        WHERE emp_cd = #{empCd}
+          AND (CONVERT(checkin_time, TIME) > CONVERT('07:45:00', TIME) AND
+               CONVERT(checkin_time, TIME) <= CONVERT('08:05:00', TIME))
+          AND (date_check >= CONVERT(#{startdate}, DATE) AND date_check <= CONVERT(#{enddate}, DATE))
+          AND reg_ip IS NOT null
+        ORDER BY attendance_id DESC
+        ]]>
+    </select>
+    <select id="loadLateDay" parameterType="hashmap" resultType="kr.co.hs.attendace.dto.AttendanceDTO">
+        <![CDATA[
+        SELECT *,
+               GET_EMP_NAME(emp_cd, #{langCd}) AS emp_name,
+               GET_DEPT_LEVEL_NAME((SELECT DCH.DEPT_CD
+                                    FROM DEPT_CHANGE_HISTORY DCH
+                                    WHERE DCH.DEPT_CHANGE_HISTORY_ID = attendance.dept_change_history_id),
+                                   #{langCd})  AS dept_name
+        FROM attendance
+        WHERE emp_cd = #{empCd}
+          AND CONVERT(checkin_time, TIME) > CONVERT('08:05:00', TIME)
+          AND (date_check >= CONVERT(#{startdate}, DATE) AND
+               date_check <= CONVERT(#{enddate}, DATE))
+          AND reg_ip IS NOT null
+        ORDER BY attendance_id DESC
+        ]]>
+    </select>
+    <select id="loadLeaveEarly" parameterType="hashmap" resultType="kr.co.hs.attendace.dto.AttendanceDTO">
+        <![CDATA[
+        SELECT *,
+               GET_EMP_NAME(emp_cd, #{langCd}) AS emp_name,
+               GET_DEPT_LEVEL_NAME((SELECT DCH.DEPT_CD
+                                    FROM DEPT_CHANGE_HISTORY DCH
+                                    WHERE DCH.DEPT_CHANGE_HISTORY_ID = attendance.dept_change_history_id),
+                                   #{langCd})  AS dept_name
+        FROM attendance
+        WHERE emp_cd = #{empCd}
+          AND CONVERT(checkout_time, TIME) < CONVERT('17:00:00', TIME) AND DAYNAME(date_check) !='Saturday'
+          AND (date_check >= CONVERT(#{startdate}, DATE) AND
+               date_check <= CONVERT(#{enddate}, DATE))
+          AND reg_ip IS NOT null
+        ORDER BY attendance_id DESC
+        ]]>
+    </select>
+
+
+</mapper>

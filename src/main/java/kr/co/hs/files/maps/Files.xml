@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//ibatis.apache.org//DTD Mapper 3.0//EN" "http://ibatis.apache.org/dtd/ibatis-3-mapper.dtd">
+
+<mapper namespace="Files">
+
+    <insert id="insertOne" parameterType="kr.co.hs.files.dto.FilesDTO" useGeneratedKeys="true" keyProperty="fileId" keyColumn="file_id">
+        INSERT INTO FILES (DEPT_CD, POSITION_CD, EMP_CD, FILE_TYPE, FILE_PATH, FILE_NAME, FILE_HASH_NAME, FILE_EXT, FILE_SIZE, FILE_STATUS, REG_DT)
+        VALUES (#{deptCd}, #{positionCd}, #{empCd}, #{fileType}, #{filePath}, #{fileName}, #{fileHashName}, #{fileExt}, #{fileSize}, #{fileStatus}, NOW())
+    </insert>
+</mapper>

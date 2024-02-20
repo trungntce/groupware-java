@@ -1,0 +1,44 @@
+USE [QuanLyNhapXuat111]
+GO
+/****** Object:  StoredProcedure [dbo].[NoiTonTheoNgay]    Script Date: 06/18/2018 4:05:02 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+-- =============================================
+-- Author:		<Author,,Name>
+-- Create date: <Create Date,,>
+-- Description:	<Description,,>
+-- =============================================
+ALTER PROCEDURE [dbo].[NoiTonTheoNgay]
+ @Ngay int,
+ @Thang int,
+ @Nam int,
+ @HopNgay datetime
+AS
+BEGIN
+	
+	
+
+	select id,CodeHang,TenHang,DonVi,TonHomTruoc,TongInput,TongOutput,TonHomTruoc+TongInput-TongOutput TonThucTe from(
+	select id,CodeHang,TenHang,DonVi,isnull(TonHomTruoc,0) as TonHomTruoc,isnull(TongInput,0) as TongInput,isnull(TongOutput,0) as TongOutput,TonHomTruoc+TongInput-TongOutput as TonThucTe from HangHoa h left join (select t.Id as idbang1,sum(t.SoLuong) TongInput from  (select HangHoa.Id,HangHoa.CodeHang,HangHoa.TenHang,
+DonVi,LichSuNhap.SoLuong,TonThucTe from HangHoa 
+inner join LichSuNhap on HangHoa.Id= LichSuNhap.IdHangHoa where DAY(Date)=@Ngay and MONTH(Date)=@Thang and YEAR(DATE)=@Nam) t
+group by t.Id,t.CodeHang,t.TenHang,t.DonVi,t.TonThucTe) input on input.idbang1=h.id
+
+left join (select k.Id as idbang2,sum(k.SoLuong) TongOutput from  (select HangHoa.Id,HangHoa.CodeHang,HangHoa.TenHang,
+DonVi,LichSuXuat.SoLuong,TonThucTe from HangHoa 
+inner join LichSuXuat on HangHoa.Id= LichSuXuat.IdHangHoa where DAY(Date)=@Ngay and MONTH(Date)=@Thang and YEAR(DATE)=@Nam) k
+group by k.Id,k.CodeHang,k.TenHang,k.DonVi,k.TonThucTe ) outd on  outd.idbang2=h.Id
+
+left join (select ReportNgay.IdHangHoa,TonCuoiNgay as TonHomTruoc from ReportNgay inner join 
+(select IdHangHoa,MAX(Date) as Date from ReportNgay where Date<= DATEADD(DD,-1,@HopNgay) group by IdHangHoa) k
+on ReportNgay.IdHangHoa=k.IdHangHoa and ReportNgay.Date=k.Date) rep on rep.IdHangHoa=h.Id
+) pp
+order by id desc
+
+
+
+
+
+END

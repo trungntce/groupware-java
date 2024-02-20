@@ -1,0 +1,587 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//ibatis.apache.org//DTD Mapper 3.0//EN" "http://ibatis.apache.org/dtd/ibatis-3-mapper.dtd">
+
+<mapper namespace="SongDayWork">
+
+    <select id="checkUseYN" parameterType="hashmap" resultType="int">
+        SELECT * FROM DAY_WORK WHERE 1=1
+    </select>
+
+    <select id="getListDayWork" parameterType="hashmap" resultType="kr.co.hs.daywork.dto.DayWorkDTO">
+        <![CDATA[
+            select *,
+                   CONCAT(
+                        (SELECT COUNT(*) FROM day_work_child WHERE day_work_id=result.day_work_id AND use_yn='Y' AND work_status='notyet'),'/',
+                        (SELECT COUNT(*) FROM day_work_child WHERE day_work_id=result.day_work_id AND use_yn='Y' AND work_status='working'),'/',
+                        (SELECT COUNT(*) FROM day_work_child WHERE day_work_id=result.day_work_id AND use_yn='Y' AND work_status='finish')
+					    ) AS STATUS
+            from (
+            select day_work.*,emp_name,dept_level_vertical_name as dept_name,position_name,
+                ( SELECT COUNT(dwt.day_work_id) FROM day_work_translation dwt left JOIN translation t on dwt.translation_id = t.translation_id WHERE day_work_id=day_work.day_work_id AND t.use_yn='Y') AS translation_status,
+                ROW_NUMBER() OVER (ORDER BY day_work.day_work_id asc) AS ROWNUM
+                from day_work
+                JOIN emp_detail ON day_work.emp_cd=emp_detail.emp_cd
+                where use_yn = 'Y' AND emp_detail.lang_cd=#{langCd}
+            ]]>
+        <if test='translationYnPara == "N" &amp;&amp; adminYnPara=="N" '>
+            <![CDATA[
+                AND dept_cd IN
+                (
+                SELECT dept_cd FROM emp JOIN position p ON emp.position_cd=p.position_cd WHERE dept_cd IN
+                (
+                SELECT * FROM (
+                SELECT dept_cd FROM emp WHERE emp_cd=#{empCd}
+                UNION ALL
+                select  dept_cd
+                from    (select * from dept order by dept_parent_cd, dept_cd) dept,
+                (select @pv := (SELECT dept_cd FROM emp WHERE emp_cd=#{empCd})) initialisation
+                where   find_in_set(dept_parent_cd, @pv) > 0
+                and     @pv := concat(@pv, ',', dept_cd)
+                ) as noi
+                )
+                AND p.position_level >= (SELECT P1.position_level FROM emp E1 JOIN position P1 ON E1.position_cd=P1.position_cd WHERE  E1.emp_cd=#{empCd}) and emp.use_yn='Y'
+                )
+            ]]>
+        </if>
+
+        <if test="dateSql != null &amp;&amp; dateSql !=''">
+            <![CDATA[  ${dateSql}  ]]>
+        </if>
+        <if test="deptSearch != null &amp;&amp; deptSearch !=''">
+        <![CDATA[  ${deptSearch}  ]]>
+        </if>
+        <if test="translationStatus != null &amp;&amp; translationStatus !=''">
+            <![CDATA[  ${translationStatus}  ]]>
+        </if>
+        <if test="workStatusSql != null &amp;&amp; workStatusSql !=''">
+            <![CDATA[  ${workStatusSql}  ]]>
+        </if>
+        <if test="inputSearchSql != null &amp;&amp; inputSearchSql !=''">
+            <![CDATA[  ${inputSearchSql}  ]]>
+        </if>
+        <![CDATA[
+            ORDER BY ${str}
+            LIMIT #{recordsPerPage} OFFSET #{startRow}
+            ) as result
+
+        ]]>
+    </select>
+
+    <select id="getSumRowDaywork" parameterType="hashmap" resultType="int">
+        <![CDATA[
+            select COUNT(day_work_id) as sum_row
+                from day_work
+                JOIN emp_detail ON day_work.emp_cd=emp_detail.emp_cd
+                where use_yn = 'Y' AND emp_detail.lang_cd=#{langCd}
+            ]]>
+        <if test='translationYnPara == "N" &amp;&amp; adminYnPara=="N" '>
+            <![CDATA[
+                AND dept_cd IN
+                (
+                SELECT dept_cd FROM emp JOIN position p ON emp.position_cd=p.position_cd WHERE dept_cd IN
+                (
+                SELECT * FROM (
+                SELECT dept_cd FROM emp WHERE emp_cd=#{empCd}
+                UNION ALL
+                select  dept_cd
+                from    (select * from dept order by dept_parent_cd, dept_cd) dept,
+                (select @pv := (SELECT dept_cd FROM emp WHERE emp_cd=#{empCd})) initialisation
+                where   find_in_set(dept_parent_cd, @pv) > 0
+                and     @pv := concat(@pv, ',', dept_cd)
+                ) as noi
+                )
+                AND p.position_level >= (SELECT P1.position_level FROM emp E1 JOIN position P1 ON E1.position_cd=P1.position_cd WHERE  E1.emp_cd=#{empCd}) and emp.use_yn='Y'
+                )
+            ]]>
+        </if>
+
+        <if test="dateSql != null &amp;&amp; dateSql !=''">
+            <![CDATA[  ${dateSql}  ]]>
+        </if>
+        <if test="deptSearch != null &amp;&amp; deptSearch !=''">
+            <![CDATA[  ${deptSearch}  ]]>
+        </if>
+        <if test="translationStatus != null &amp;&amp; translationStatus !=''">
+            <![CDATA[  ${translationStatus}  ]]>
+        </if>
+        <if test="workStatusSql != null &amp;&amp; workStatusSql !=''">
+            <![CDATA[  ${workStatusSql}  ]]>
+        </if>
+        <if test="inputSearchSql != null &amp;&amp; inputSearchSql !=''">
+            <![CDATA[  ${inputSearchSql}  ]]>
+        </if>
+
+    </select>
+
+    <select id="getlistWorkByID" parameterType="hashmap" resultType="kr.co.hs.daywork.dto.DayWorkDTO">
+        select *,
+               GET_DEPT_NAME(dept_change_history_id, #{langCd}) as history_dept_name,
+               GET_EMP_NAME(emp_cd, #{langCd})                  as emp_name,
+               GET_DEPT_LEVEL_NAME(DEPT_CD, #{langCd})          AS DEPT_NAME,
+               GET_POSITION_NAME(position_cd, #{langCd})        as position_name
+        from day_work
+        where day_work_id = #{dayWorkId}
+    </select>
+
+    <select id="getTypeMainWork" parameterType="hashmap" resultType="int">
+        select count(*)
+        from DAY_WORK_CHILD
+        WHERE DAY_WORK_ID = #{dayWorkId}
+          and children_day_work_id = 0
+          and use_yn = 'Y'
+
+    </select>
+    <select id="getTypeSubWork" parameterType="hashmap" resultType="int">
+        select count(*)
+        from DAY_WORK_CHILD
+        WHERE DAY_WORK_ID = #{dayWorkId}
+          and children_day_work_id = 1
+          and use_yn = 'Y'
+
+    </select>
+
+    <select id="getlistWorkChildByID" parameterType="hashmap" resultType="kr.co.hs.daywork.dto.DayWorkDTO">
+        SELECT *, ROW_NUMBER() OVER(ORDER BY ID) ROWNUM
+        FROM DAY_WORK_CHILD
+        WHERE DAY_WORK_ID = #{dayWorkId}
+          and USE_YN = 'Y'
+          and children_day_work_id = 0
+    </select>
+
+    <select id="getChildDayWorkId" parameterType="kr.co.hs.daywork.dto.DayWorkDTO"
+            resultType="kr.co.hs.daywork.dto.DayWorkDTO">
+        SELECT *
+        FROM DAY_WORK_CHILD
+        WHERE id = #{id}
+          and USE_YN = 'Y'
+    </select>
+
+    <select id="getlistMoreWorkChildByID" parameterType="hashmap" resultType="kr.co.hs.daywork.dto.DayWorkDTO">
+        SELECT *
+        FROM DAY_WORK_CHILD
+        WHERE DAY_WORK_ID = #{dayWorkId}
+          and USE_YN = 'Y'
+          and children_day_work_id = 1
+    </select>
+
+    <select id="getCountMoreDayWork" parameterType="hashmap" resultType="int">
+        SELECT COUNT(Distinct (children_day_work_id))
+        FROM DAY_WORK_CHILD
+        WHERE DAY_WORK_ID = #{dayWorkId}
+          and USE_YN = 'Y'
+    </select>
+
+    <update id="updateDayWork" parameterType="kr.co.hs.daywork.dto.DayWorkDTO">
+        UPDATE DAY_WORK
+        SET lang_cd                = #{langCd}
+          , title                  = #{title}
+          , contents               = (select count(*)
+                                      from DAY_WORK_CHILD
+                                      where day_work_id = #{dayWorkId} and use_yn = 'Y')
+          , use_yn                 ='Y'
+        WHERE day_work_id = #{dayWorkId}
+    </update>
+
+    <update id="deleteDayWorkChild" parameterType="int">
+        UPDATE DAY_WORK_CHILD
+        SET USE_YN = 'N'
+        WHERE id = #{id};
+        UPDATE DAY_WORK
+        SET CONTENTS = (
+            SELECT COUNT(ID)
+            FROM DAY_WORK_CHILD
+            WHERE DAY_WORK_ID =
+                  (SELECT DAY_WORK_ID FROM DAY_WORK_CHILD WHERE ID = #{id})
+              AND USE_YN = 'Y')
+        WHERE DAY_WORK_ID = (SELECT DAY_WORK_ID FROM DAY_WORK_CHILD WHERE ID = #{id})
+          AND USE_YN = 'Y'
+
+    </update>
+
+    <update id="updateStatusWorkChild" parameterType="kr.co.hs.daywork.dto.DayWorkDTO">
+        UPDATE DAY_WORK_CHILD
+        SET WORK_STATUS = #{status},
+            modify_date = now()
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateDayWorkChild" parameterType="kr.co.hs.daywork.dto.DayWorkDTO">
+        UPDATE DAY_WORK_CHILD
+        SET contents    = #{contents}
+          , MODIFY_DATE = now()
+        WHERE id = #{id}
+    </update>
+
+    <select id="getlistWorkChildByIDChild" parameterType="kr.co.hs.daywork.dto.DayWorkDTO" resultType="String">
+        SELECT contents
+        FROM DAY_WORK_CHILD
+        WHERE id = #{id}
+    </select>
+
+    <select id="getlistWorkChildByIDTime" parameterType="kr.co.hs.daywork.dto.DayWorkDTO" resultType="String">
+        SELECT modify_date
+        FROM DAY_WORK_CHILD
+        WHERE id = #{id}
+    </select>
+
+    <insert id="addWork" parameterType="kr.co.hs.daywork.dto.DayWorkDTO">
+        INSERT INTO DAY_WORK
+        ( lang_cd
+        , emp_cd
+        , dept_change_history_id
+        , dept_cd
+        , position_cd
+        , title
+        , contents
+        , reg_dt
+        , use_yn)
+        VALUES ( #{langCd}
+               , #{empCd}
+               , (select dept_change_history_id
+                  from dept_change_history
+                  where dept_cd = #{deptCd}
+                    and dept_version = (select max(dept_version) from dept_change_history where dept_cd = #{deptCd}))
+               , #{deptCd}
+               , #{positionCd}
+               , #{title}
+               , #{contents}
+               , now()
+               , "Y")
+    </insert>
+
+
+    <insert id="addWorkChild" parameterType="kr.co.hs.daywork.dto.DayWorkDTO">
+        INSERT INTO DAY_WORK_CHILD
+        ( day_work_id
+        , contents
+        , work_status
+        , create_date
+        , modify_date
+        , use_yn
+        , children_day_work_id)
+        VALUES ( (select max(day_work_id)
+                  from day_work
+                  where emp_cd = #{empCd}
+                    and CONVERT(reg_dt, DATE) = CONVERT(NOW(), DATE))
+               , #{contents}
+               , 'NOTYET'
+               , NOW()
+               , NOW()
+               , 'Y'
+               , 0)
+    </insert>
+
+    <insert id="addChildDayWorkUpdate" parameterType="kr.co.hs.daywork.dto.DayWorkDTO">
+        INSERT INTO DAY_WORK_CHILD
+        ( day_work_id
+        , contents
+        , work_status
+        , create_date
+        , modify_date
+        , use_yn
+        , children_day_work_id)
+        VALUES ( #{dayWorkId}
+               , #{contents}
+               , 'NOTYET'
+               , NOW()
+               , NOW()
+               , 'Y'
+               , 0)
+    </insert>
+
+    <insert id="addMoreWorkChild" parameterType="kr.co.hs.daywork.dto.DayWorkDTO">
+        INSERT INTO DAY_WORK_CHILD
+        ( day_work_id
+        , contents
+        , work_status
+        , create_date
+        , modify_date
+        , use_yn
+        , children_day_work_id)
+        VALUES ( #{dayWorkId}
+               , #{contents}
+               , 'NOTYET'
+               , NOW()
+               , NOW()
+               , 'Y'
+               , 1);
+
+        UPDATE DAY_WORK
+        SET CONTENTS = (SELECT COUNT(*) AS NUMBERCOUNT
+                        FROM DAY_WORK_CHILD
+                        WHERE DAY_WORK_ID = #{dayWorkId})
+        WHERE DAY_WORK_ID = #{dayWorkId}
+          AND USE_YN = 'Y'
+
+    </insert>
+
+    <insert id="addMoreWorkChildUpdate" parameterType="kr.co.hs.daywork.dto.DayWorkDTO">
+        INSERT INTO DAY_WORK_CHILD
+        ( day_work_id
+        , contents
+        , work_status
+        , create_date
+        , modify_date
+        , use_yn
+        , children_day_work_id)
+        VALUES ( #{dayWorkId}
+               , #{contents}
+               , 'NOTYET'
+               , NOW()
+               , NOW()
+               , 'Y'
+               , 1);
+
+        UPDATE DAY_WORK
+        SET CONTENTS = (SELECT COUNT(*) AS NUMBERCOUNT
+                        FROM DAY_WORK_CHILD
+                        WHERE DAY_WORK_ID = #{dayWorkId})
+        WHERE DAY_WORK_ID = #{dayWorkId}
+          AND USE_YN = 'Y'
+
+    </insert>
+
+    <update id="updateDayWorkStatus" parameterType="kr.co.hs.daywork.dto.DayWorkDTO">
+        UPDATE DAY_WORK
+        SET CONTENTS = #{contents}
+        WHERE DAY_WORK_ID = #{dayWorkId}
+    </update>
+
+    <select id="getListDayMyWork" parameterType="hashmap" resultType="kr.co.hs.daywork.dto.DayWorkDTO">
+        <![CDATA[
+            select *,
+                   CONCAT(
+                        (SELECT COUNT(*) FROM day_work_child WHERE day_work_id=result.day_work_id AND use_yn='Y' AND work_status='notyet'),'/',
+                        (SELECT COUNT(*) FROM day_work_child WHERE day_work_id=result.day_work_id AND use_yn='Y' AND work_status='working'),'/',
+                        (SELECT COUNT(*) FROM day_work_child WHERE day_work_id=result.day_work_id AND use_yn='Y' AND work_status='finish')
+					    ) AS STATUS
+            from (
+            select day_work.*,emp_name,dept_level_vertical_name as dept_name,position_name,
+                ( SELECT COUNT(dwt.day_work_id) FROM day_work_translation dwt left JOIN translation t on dwt.translation_id = t.translation_id WHERE day_work_id=day_work.day_work_id AND t.use_yn='Y') AS translation_status,
+                ROW_NUMBER() OVER (ORDER BY day_work.day_work_id asc) AS ROWNUM
+                from day_work
+                JOIN emp_detail ON day_work.emp_cd=emp_detail.emp_cd
+                where use_yn = 'Y' AND emp_detail.lang_cd=#{langCd} and day_work.emp_cd=#{empCd} and day_work.dept_cd = #{deptCd}
+            ]]>
+        <if test="dateSql != null &amp;&amp; dateSql !=''">
+            <![CDATA[  ${dateSql}  ]]>
+        </if>
+        <if test="deptSearch != null &amp;&amp; deptSearch !=''">
+            <![CDATA[  ${deptSearch}  ]]>
+        </if>
+        <if test="translationStatus != null &amp;&amp; translationStatus !=''">
+            <![CDATA[  ${translationStatus}  ]]>
+        </if>
+        <if test="workStatusSql != null &amp;&amp; workStatusSql !=''">
+            <![CDATA[  ${workStatusSql}  ]]>
+        </if>
+        <if test="inputSearchSql != null &amp;&amp; inputSearchSql !=''">
+            <![CDATA[  ${inputSearchSql}  ]]>
+        </if>
+        <![CDATA[
+            ORDER BY ${str}
+            LIMIT #{recordsPerPage} OFFSET #{startRow}
+            ) as result
+        ]]>
+    </select>
+
+    <select id="getListDayMyWorkExcelExport" parameterType="hashmap" resultType="kr.co.hs.daywork.dto.DayWorkDTO">
+        <![CDATA[
+        SELECT *,
+               ROW_NUMBER() OVER (ORDER BY ROWNUM asc) AS ROWNUMS
+        FROM (
+                 select *,
+                        CONCAT(
+                                (SELECT COUNT(*) FROM day_work_child WHERE day_work_id=result.day_work_id AND use_yn='Y' AND work_status='notyet'),'/',
+                                (SELECT COUNT(*) FROM day_work_child WHERE day_work_id=result.day_work_id AND use_yn='Y' AND work_status='working'),'/',
+                                (SELECT COUNT(*) FROM day_work_child WHERE day_work_id=result.day_work_id AND use_yn='Y' AND work_status='finish')
+                            ) AS STATUS
+                 from (
+                          select day_work.day_work_id
+                               ,day_work.emp_cd
+                               ,day_work.dept_change_history_id
+                               ,day_work.title
+                               ,day_work.reg_dt
+                               ,dwc.contents
+                               ,emp_name
+                               ,dept_level_vertical_name as dept_name
+                               ,position_name
+                               ,(
+                              SELECT COUNT(dwt.day_work_id)
+                              FROM day_work_translation dwt
+                                       left JOIN translation t on dwt.translation_id = t.translation_id
+                              WHERE day_work_id=day_work.day_work_id
+                                AND t.use_yn='Y'
+                          ) AS translation_status
+                               ,ROW_NUMBER() OVER (ORDER BY day_work.day_work_id asc) AS ROWNUM
+				,ROW_NUMBER() OVER (ORDER BY day_work.day_work_id asc) AS type
+                          from day_work
+                                   JOIN emp_detail ON day_work.emp_cd=emp_detail.emp_cd
+
+                                   LEFT JOIN (
+                              SELECT day_work_id, GROUP_CONCAT(contents SEPARATOR '\n') contents
+                              FROM day_work_child dwc
+                              WHERE day_work_id IN (SELECT day_work_id FROM day_work WHERE emp_cd = #{empCd} AND use_yn = 'Y')
+                              GROUP BY day_work_id
+                          ) dwc ON day_work.day_work_id = dwc.day_work_id
+
+                          where day_work.use_yn = 'Y'
+                            AND emp_detail.lang_cd=#{langCd}
+                            AND day_work.emp_cd=#{empCd}
+                            AND day_work.dept_cd = #{deptCd}
+                        ]]>
+                        <if test="dateSql != null &amp;&amp; dateSql !=''">
+                            <![CDATA[  ${dateSql}  ]]>
+                        </if>
+                        <if test="deptSearch != null &amp;&amp; deptSearch !=''">
+                            <![CDATA[  ${deptSearch}  ]]>
+                        </if>
+                        <if test="translationStatus != null &amp;&amp; translationStatus !=''">
+                            <![CDATA[  ${translationStatus}  ]]>
+                        </if>
+                        <if test="workStatusSql != null &amp;&amp; workStatusSql !=''">
+                            <![CDATA[  ${workStatusSql}  ]]>
+                        </if>
+                        <if test="inputSearchSql != null &amp;&amp; inputSearchSql !=''">
+                            <![CDATA[  ${inputSearchSql}  ]]>
+                        </if>
+                        <![CDATA[
+                      )as result
+
+                 UNION ALL
+
+                 select result.day_work_id
+                         , result.emp_cd
+                         , result.dept_change_history_id
+                         ,case
+                                when trs.title IS NULL
+                                    then "-"
+                                ELSE
+                                    trs.title
+                          END AS title
+                         , result.reg_dt
+                         ,case
+                                when trs.contents IS NULL
+                                    then "-"
+                                ELSE
+                                    trs.contents
+                          END AS contents
+                         , result.emp_name
+                         , result.dept_name
+                         , result.position_name
+                         , result.translation_status
+                         , result.rownum
+                         , result.type
+                        ,CONCAT(
+                                (SELECT COUNT(*) FROM day_work_child WHERE day_work_id=result.day_work_id AND use_yn='Y' AND work_status='notyet'),'/',
+                                (SELECT COUNT(*) FROM day_work_child WHERE day_work_id=result.day_work_id AND use_yn='Y' AND work_status='working'),'/',
+                                (SELECT COUNT(*) FROM day_work_child WHERE day_work_id=result.day_work_id AND use_yn='Y' AND work_status='finish')
+                            ) AS STATUS
+                 from (
+                          select day_work.day_work_id
+                               ,day_work.emp_cd
+                               ,day_work.dept_change_history_id
+                               ,day_work.reg_dt
+                               ,emp_name
+                               ,dept_level_vertical_name as dept_name
+                               ,position_name
+                               ,'' AS translation_status
+                               ,ROW_NUMBER() OVER (ORDER BY day_work.day_work_id asc) AS ROWNUM
+				                ,'translate' AS type
+                          from day_work
+                                   JOIN emp_detail ON day_work.emp_cd=emp_detail.emp_cd
+                          where day_work.use_yn = 'Y'
+                            AND emp_detail.lang_cd=#{langCd}
+                            AND day_work.emp_cd=#{empCd}
+                            AND day_work.dept_cd = #{deptCd}
+                            ]]>
+                            <if test="dateSql != null &amp;&amp; dateSql !=''">
+                                <![CDATA[  ${dateSql}  ]]>
+                            </if>
+                            <if test="deptSearch != null &amp;&amp; deptSearch !=''">
+                                <![CDATA[  ${deptSearch}  ]]>
+                            </if>
+                            <if test="translationStatus != null &amp;&amp; translationStatus !=''">
+                                <![CDATA[  ${translationStatus}  ]]>
+                            </if>
+                            <if test="workStatusSql != null &amp;&amp; workStatusSql !=''">
+                                <![CDATA[  ${workStatusSql}  ]]>
+                            </if>
+                            <if test="inputSearchSql != null &amp;&amp; inputSearchSql !=''">
+                                <![CDATA[  ${inputSearchSql}  ]]>
+                            </if>
+                            <![CDATA[
+                      )as result
+                LEFT JOIN (
+                        SELECT dt.* FROM day_work_translation dt
+                        JOIN translation tr ON dt.translation_id = tr.translation_id AND tr.use_yn = 'Y'
+					    ) dwt ON result.day_work_id = dwt.day_work_id
+	            LEFT JOIN translation trs ON dwt.translation_id = trs.translation_id AND trs.use_yn = 'Y'
+             ) result
+        ]]>
+    </select>
+
+    <select id="getSumRowMyDaywork" parameterType="hashmap" resultType="int">
+        <![CDATA[
+            select COUNT(day_work_id) as sum_row
+                from day_work
+                JOIN emp_detail ON day_work.emp_cd=emp_detail.emp_cd
+                where use_yn = 'Y' AND emp_detail.lang_cd=#{langCd} and day_work.emp_cd=#{empCd} and day_work.dept_cd = #{deptCd}
+            ]]>
+
+        <if test="dateSql != null &amp;&amp; dateSql !=''">
+            <![CDATA[  ${dateSql}  ]]>
+        </if>
+        <if test="deptSearch != null &amp;&amp; deptSearch !=''">
+            <![CDATA[  ${deptSearch}  ]]>
+        </if>
+        <if test="translationStatus != null &amp;&amp; translationStatus !=''">
+            <![CDATA[  ${translationStatus}  ]]>
+        </if>
+        <if test="workStatusSql != null &amp;&amp; workStatusSql !=''">
+            <![CDATA[  ${workStatusSql}  ]]>
+        </if>
+        <if test="inputSearchSql != null &amp;&amp; inputSearchSql !=''">
+            <![CDATA[  ${inputSearchSql}  ]]>
+        </if>
+    </select>
+
+    <select id="getListDayMyWorkMain" parameterType="hashmap" resultType="kr.co.hs.daywork.dto.DayWorkDTO">
+        select *,
+               GET_DEPT_NAME(dept_change_history_id, #{langCd}) as history_dept_name,
+               GET_EMP_NAME(emp_cd,
+                            #{langCd})                          as emp_name,
+               GET_DEPT_LEVEL_NAME(DEPT_CD,
+                                   #{langCd})                   AS DEPT_NAME,
+               GET_POSITION_NAME(position_cd,
+                                 #{langCd})                     as position_name
+        FROM (
+              select *,@ROWNUM := @ROWNUM + 1 AS ROWNUM from day_work, (SELECT @ROWNUM := 0) TEMP
+                 where use_yn = 'Y' and emp_cd=#{empCd}
+                 order by day_work_id desc
+                 limit 0, 5
+                 ) result
+    </select>
+
+    <update id="xoaDayWork" parameterType="hashmap">
+        update day_work
+        set use_yn='N'
+        WHERE ${param}
+    </update>
+
+    <update id="updateTransStatus" parameterType="hashmap">
+        UPDATE TRANSLATION
+            SET TRANSLATION_STATUS = '1'
+        WHERE TRANSLATION_ID = #{translationId};
+
+        UPDATE TRANSLATION
+            SET TRANSLATION_STATUS = '0'
+            WHERE TRANSLATION_ID IN (
+                SELECT trans.translation_id FROM translation trans
+                JOIN day_work_translation dwt ON dwt.translation_id = trans.translation_id
+                    WHERE dwt.day_work_id = #{dayWorkId}
+                    AND trans.use_yn='Y'
+                    AND trans.translation_id != #{translationId})
+    </update>
+
+</mapper>

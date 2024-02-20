@@ -1,0 +1,123 @@
+.tr-print-table { 
+    background-color: #1c5691 !important; 
+    border:1px solid #000; 
+    padding:0.5em; 
+    } 
+    
+    .fixed-header { 
+        width: 100%; 
+        position: fixed; 
+    } 
+    
+    table#printTable {
+        font-size: 11px;
+    }
+    
+    #printTable thead tr th.sorting_desc:after{
+        display: none !important;
+    }
+    
+    .table .odd, .even {
+        height: 75px;
+    }
+    
+    .header-print-table {
+        position: fixed;
+    }
+    
+    td.child-td-table-print {
+        border: none !important;
+        height: 126px;
+    }
+    
+    body {
+        background: none !important;
+    }
+    
+    div#printTable_info {
+        display: none;
+    }
+    
+    div#printTable_paginate {
+        display: none;
+    }
+    
+    div#printTable_processing {
+        display: none !important;
+    }
+    
+    .main-table-print td {
+        padding: 5px 5px 5px 3px;
+        border: 1px solid #e4e7ea;
+    }
+    
+    div#printTable_filter {
+        display: none;
+    }
+    
+    table.main-table-print {
+        font-size: 11px;
+    }
+    
+    .print-header { 
+        width: 100%; 
+        float: left; 
+        background: yellow; 
+        font-size: 24px; 
+        text-align: center; 
+        border: 1px solid #e4e7ea; 
+        border-bottom: none; 
+    } 
+    .print-header h3 { 
+        font-size: 24px; 
+        margin: 10px 0px 10px 0px; 
+    } 
+    
+    .print-time-body { 
+        width: 100%; 
+        float: left; 
+        background: yellow; 
+        font-size: 24px; 
+        text-align: center; 
+        border: 1px solid #e4e7ea; 
+        border-bottom: none; 
+    } 
+    .print-time-body h6 { 
+        float: right; 
+        font-size: 14px; 
+        margin: 10px 0 10px 0; 
+    } 
+    
+    .print-title-bottom { 
+        width: 100%; 
+        float: left; 
+        background: yellow; 
+        text-align: center; 
+        border: 1px solid #e4e7ea; 
+        border-bottom: none; 
+    } 
+    .print-title-bottom h6 { 
+        font-size: 14px; 
+        margin: 10px 0 10px 0; 
+    } 
+    div#printTableBottom_filter { 
+        display: none; 
+    } 
+    div#printTableBottom_info { 
+        display: none; 
+    } 
+    div#printTableBottom_paginate { 
+        display: none; 
+    } 
+    .fixed-print{ 
+        position: fixed; 
+        width: 100%; 
+    } 
+    
+    .attributes-hide{ 
+        display: none; 
+    } 
+    .tr-print-table th{
+        background-color: #1c5691 !important;
+    }
+    

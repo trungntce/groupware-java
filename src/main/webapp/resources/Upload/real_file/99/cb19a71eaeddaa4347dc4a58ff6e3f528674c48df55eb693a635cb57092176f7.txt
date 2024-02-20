@@ -1,0 +1,30 @@
+declare @Nam int
+declare @Thang int
+declare @Ngay int
+declare @gio int
+declare @phut int
+declare @giay int
+declare @miligiay int
+
+
+declare @thoigian datetime
+declare @thoigianTiep datetime
+
+set @Nam=2018
+set @Thang=6
+set @Ngay=1
+
+
+set @gio=7
+set @phut=0
+set @giay=0
+set @miligiay=0
+set @thoigian=DATETIMEFROMPARTS(@Nam,@Thang,@Ngay,@gio,@phut,@giay,@miligiay)
+set @thoigianTiep=DATEADD(MM,1,@thoigian)
+
+select m.Model,isnull(m.QtyActual,0) as QtyActual from 
+(select sum(convert(int,QtyActual)) as QtyActual,k.Model from 
+(select ID,QtyActual,Date,Model from PI_ProductQty where @thoigian<Date and Date<@thoigianTiep) k group by k.Model) m
+
+
+select m.Model,isnull(m.QtyActual,0) as QtyActual from (select sum(convert(int,QtyActual)) as QtyActual,k.Model from (select ID,QtyActual,Date,Model from PI_ProductQty where MONTH(Date)=6 and YEAR(Date)=2018) k group by k.Model) m

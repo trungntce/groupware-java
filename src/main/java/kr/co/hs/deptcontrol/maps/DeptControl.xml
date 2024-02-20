@@ -1,0 +1,215 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//ibatis.apache.org//DTD Mapper 3.0//EN" "http://ibatis.apache.org/dtd/ibatis-3-mapper.dtd">
+<mapper namespace="DatDept">
+    <select id="selectDeptCount" parameterType="kr.co.hs.deptcontrol.dto.SearchDeptControlDTO" resultType="int">
+        <![CDATA[
+               SELECT COUNT(*)
+               FROM (
+                    SELECT
+                     *
+ 		            , (SELECT DEPT_NAME
+ 				        FROM DEPT
+ 				        WHERE DEPT_CD = DPT.DEPT_PARENT_CD) AS DEPT_PARENT_NAME
+ 			        FROM DEPT DPT)
+ 			RESULT WHERE 1=1
+        ]]>
+        <if test="type != null &amp;&amp; type !='' &amp;&amp; keyword != null &amp;&amp; keyword !=''">
+            AND ${type} LIKE CONCAT('%',#{keyword},'%' )
+        </if>
+    </select>
+    <select id="selectDeptList" resultType="kr.co.hs.deptcontrol.dto.DeptControlDTO">
+        <![CDATA[
+                    SELECT
+                        ROW_NUMBER() OVER (ORDER BY dept_cd asc) AS ROWNUM
+                    ,   DEPT_CD
+                    ,	DEPT_PARENT_CD
+                    ,	DEPT_LEVEL
+                    ,	COLLAPSE_YN
+                    , GET_DEPT_NAME(DEPT_CD,#{langCd}) as DEPT_NAME
+ 		            , GET_DEPT_PARENT_NAME(DEPT_CD, #{langCd}) AS DEPT_PARENT_NAME
+ 				     ,	USE_YN
+ 			        FROM DEPT
+ 			         WHERE USE_YN = 'Y'
+        ]]>
+        <if test="type != null &amp;&amp; type !='' &amp;&amp; keyword != null &amp;&amp; keyword !=''">
+            AND ${type} LIKE CONCAT('%',#{keyword},'%' )
+        </if>
+        <![CDATA[
+            ORDER BY ROWNUM asc
+            LIMIT #{start}, #{limit}
+        ]]>
+    </select>
+
+    <select id="selectDeptView" parameterType="kr.co.hs.deptcontrol.dto.SearchDeptControlDTO"
+            resultType="kr.co.hs.deptcontrol.dto.DeptControlDTO">
+        <![CDATA[
+            SELECT * FROM (
+                    SELECT DEPT_CD
+                    ,	DEPT_PARENT_CD
+                    ,	DEPT_LEVEL
+                    ,	COLLAPSE_YN
+                    , GET_DEPT_NAME(DEPT_CD,#{langCd}) as DEPT_NAME
+ 		            , GET_DEPT_PARENT_NAME(DEPT_CD, #{langCd}) AS DEPT_PARENT_NAME
+ 				    ,	USE_YN
+ 				    ,  SORT
+ 			        FROM DEPT DPT)
+ 			RESULT WHERE DEPT_CD = #{deptCd}
+        ]]>
+    </select>
+
+    <select id="selectDeptViewEdit" parameterType="kr.co.hs.deptcontrol.dto.SearchDeptControlDTO"
+            resultType="kr.co.hs.deptcontrol.dto.DeptControlDTO">
+        <![CDATA[
+            SELECT * FROM (
+                    SELECT DEPT_CD
+                    ,	DEPT_PARENT_CD
+                    ,	DEPT_LEVEL
+                    ,	COLLAPSE_YN
+                    ,   DEPT_NAME
+ 		            , GET_DEPT_PARENT_NAME(DEPT_CD, #{langCd}) AS DEPT_PARENT_NAME
+ 				    ,	USE_YN
+ 				    ,  SORT
+ 			        FROM DEPT DPT)
+ 			RESULT WHERE DEPT_CD = #{deptCd}
+        ]]>
+    </select>
+
+    <select id="selectDeptNameList" parameterType="String" resultType="kr.co.hs.deptcontrol.dto.DeptControlDTO">
+        <![CDATA[
+            SELECT
+                    DEPT_CD
+                  , GET_DEPT_LEVEL_HORIZONTALITY_NAME(DEPT_CD,#{langCd}) as DEPT_NAME
+            FROM DEPT DPT
+        ]]>
+    </select>
+
+    <select id="getPositionLevelNumber" parameterType="hashmap" resultType="Integer">
+        <![CDATA[
+        SELECT POSITION_LEVEL
+        FROM POSITION
+        WHERE POSITION_CD = (SELECT POSITION_CD
+                             FROM EMP
+                             WHERE EMP_CD = #{empCd})
+        ]]>
+    </select>
+
+    <insert id="insertDept" parameterType="kr.co.hs.deptcontrol.dto.DeptControlDTO">
+        <![CDATA[
+            INSERT
+            INTO DEPT (
+                 DEPT_PARENT_CD
+                 ,DEPT_LEVEL
+                 ,COLLAPSE_YN
+                 ,SORT
+                 ,DEPT_NAME
+                 ,USE_YN)
+            VALUES (
+                #{deptParentCd}
+                ,(SELECT (DEPT_LEVEL + 1) FROM DEPT DPT WHERE DEPT_CD = #{deptParentCd})
+                ,#{collapseYn}
+                ,#{sort}
+                ,#{deptName}
+                ,#{useYn})
+        ]]>
+    </insert>
+
+    <select id="selectDeptOn" parameterType="String" resultType="kr.co.hs.deptcontrol.dto.DeptControlDTO">
+        <![CDATA[
+            SELECT * FROM DEPT WHERE DEPT_CD = #{deptCd}
+        ]]>
+    </select>
+
+    <update id="updateDept" parameterType="kr.co.hs.deptcontrol.dto.DeptControlDTO">
+        <![CDATA[
+            UPDATE DEPT SET
+            	COLLAPSE_YN = #{collapseYn}
+            ,	SORT = #{sort}
+            ,	DEPT_NAME = #{deptName}
+            ,	USE_YN = #{useYn}
+            WHERE DEPT_CD = #{deptCd}
+        ]]>
+    </update>
+
+    <select id="treeDept" parameterType="String" resultType="kr.co.hs.deptcontrol.dto.DeptControlDTO">
+        <![CDATA[
+        SELECT CONCAT('D_',dept_cd) AS PUBLIC_CD
+             ,GET_DEPT_NAME(dept_cd, #{langCd}) DEPT_NAME
+             ,IFNULL(CONCAT('D_',dept_parent_cd), 0) PUBLIC_PARENT_CD
+             , 0 as position_level
+             , 0 AS POSITION_CD
+             , '' AS POSITION_NAME
+             , case
+                   when dept_level = 1
+                       then ("<button style='border: none; float: left;' data-action='collapse' type='button'>-</button><button style='border: none; float: left; display: none;' data-action='expand' type='button'>+</button><div class='dd-handle' style = 'background: #FAA31B;'>")
+                   when dept_level = 2
+                       then ("<button style='border: none; float: left;' data-action='collapse' type='button'>-</button><button style='border: none; float: left; display: none;' data-action='expand' type='button'>+</button><div class='dd-handle' style = 'background: #FFF000;'>")
+                   when dept_level = 3
+                       then ("<button style='border: none; float: left;' data-action='collapse' type='button'>-</button><button style='border: none; float: left; display: none;' data-action='expand' type='button'>+</button><div class='dd-handle' style = 'background: #82C341;'>")
+                   when dept_level = 4
+                       then ("<button style='border: none; float: left;' data-action='collapse' type='button'>-</button><button style='border: none; float: left; display: none;' data-action='expand' type='button'>+</button><div class='dd-handle' style = 'background: #88C6ED;'>")
+                   when dept_level = 5
+                       then ("<button style='border: none; float: left;' data-action='collapse' type='button'>-</button><button style='border: none; float: left; display: none;' data-action='expand' type='button'>+</button><div class='dd-handle' style = 'background: #D54799;'>")
+                   else
+                         ("<button style='border: none; float: left;' data-action='collapse' type='button'>-</button><button style='border: none; float: left; display: none;' data-action='expand' type='button'>+</button><div class='dd-handle' style = 'background: #D54799;'>")
+        end as subStr
+            , sort
+        FROM dept WHERE dept.use_yn='Y'
+        UNION all
+        SELECT CONCAT('E_',emp_cd) AS PUBLIC_CD
+             , CONCAT( GET_EMP_NAME(EMP_CD, #{langCd}),'[',GET_POSITION_NAME(EMP.POSITION_CD,#{langCd}),']') as DEPT_NAME
+             , CONCAT('D_',dept_cd) PUBLIC_PARENT_CD
+             , (SELECT POSITION_LEVEL FROM POSITION WHERE POSITION_CD = EMP.POSITION_CD) as position_level
+             , emp.POSITION_CD
+             , GET_POSITION_NAME(emp.POSITION_CD, #{langCd}) AS POSITION_NAME
+             , '<div class="dd-handle">' as subStr
+             , 0 as sort
+        FROM emp
+        WHERE emp.use_yn='Y' and GET_EMP_NAME(EMP_CD, 'ko') != TRIM('Admin')
+        ORDER BY sort asc, position_level asc
+        ]]>
+    </select>
+    <select id="treeDeptEmpName" parameterType="String" resultType="kr.co.hs.deptcontrol.dto.DeptControlDTO">
+        <![CDATA[
+            SELECT
+                            D.DEPT_CD,
+                            GET_DEPT_NAME(D.DEPT_CD, 'ko') AS DEPT_NAME,
+                            D.DEPT_PARENT_CD,
+                            GET_EMP_NAME( E.EMP_CD, 'ko') as EMP_NAME
+            FROM DEPT D
+            LEFT JOIN EMP E ON D.DEPT_CD = E.DEPT_CD
+            WHERE D.USE_YN = 'Y' and e.USE_YN = 'Y'
+        ]]>
+    </select>
+
+    <update id="upDeptTree" parameterType="hashmap">
+        <![CDATA[
+        UPDATE dept SET dept_parent_cd=#{deptParentCd} WHERE dept_cd=#{deptCd}
+        ]]>
+    </update>
+
+    <update id="upDeptLevelTree" parameterType="hashmap">
+        <![CDATA[
+            UPDATE DEPT SET DEPT_LEVEL = (SELECT DEPT_LEVEL + 1 FROM DEPT WHERE DEPT_CD = #{deptParentCd}) WHERE DEPT_CD = #{deptCd}
+        ]]>
+    </update>
+
+    <update id="upEmpTree" parameterType="hashmap">
+        <![CDATA[
+        UPDATE emp SET dept_cd=#{deptCd} WHERE emp_cd=#{empCd}
+        ]]>
+    </update>
+
+    <select id="getDeptByDeptParentCd" resultType="kr.co.hs.deptcontrol.dto.DeptControlDTO">
+        SELECT
+            *
+        FROM
+            DEPT
+        WHERE
+            DEPT_PARENT_CD IN
+            <foreach item="item" index="index" collection="listParentCd" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+        AND USE_YN = 'Y';
+    </select>
+
+</mapper>

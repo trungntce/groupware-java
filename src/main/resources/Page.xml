@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" ?> 
+<!DOCTYPE mapper PUBLIC "-//ibatis.apache.org//DTD Mapper 3.0//EN" "http://ibatis.apache.org/dtd/ibatis-3-mapper.dtd">
+
+<mapper namespace="Page">
+	<sql id="Top">
+	<![CDATA[
+		SELECT * FROM(
+			SELECT ROWNUM AS RNUM, A.* FROM(
+	]]>
+	</sql>
+	
+	<sql id="Bottom">
+	<![CDATA[
+			)A WHERE ROWNUM <= (#{page} * #{limit})
+		) WHERE RNUM > (#{page}-1)*#{limit}
+	]]>
+	</sql>
+</mapper>

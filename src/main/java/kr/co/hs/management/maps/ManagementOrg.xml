@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//ibatis.apache.org//DTD Mapper 3.0//EN" "http://ibatis.apache.org/dtd/ibatis-3-mapper.dtd">
+
+<mapper namespace="ManagementOrg">
+
+    <!-- 부서 리스트 카운트. -->
+    <select id="selectCount" parameterType="kr.co.hs.management.dto.ManagementOrgSearchDTO" resultType="int">
+        <![CDATA[
+			SELECT COUNT(*)
+			FROM (
+			     SELECT
+                    *,
+                    (SELECT DEPT_NAME FROM DEPT WHERE DEPT_CD = DP.DEPT_PARENT_CD) AS DEPT_PARENT_NAME
+                    FROM DEPT DP
+			) RESULT
+            WHERE 1=1
+		]]>
+        <if test="type != null &amp;&amp; type !='' &amp;&amp; keyword != null &amp;&amp; keyword !=''">
+            AND ${type} LIKE CONCAT('%',#{keyword},'%' )
+        </if>
+        <if test="deptLevel != null &amp;&amp; deptLevel != '' &amp;&amp; deptLevel != 999999">
+            AND DEPT_LEVEL = #{deptLevel}
+        </if>
+        <if test="useYn != null &amp;&amp; useYn != ''">
+            AND USE_YN = #{useYn}
+        </if>
+    </select>
+
+    <!-- 부서 리스트 가져오기. -->
+    <select id="selectDeptList" parameterType="kr.co.hs.management.dto.ManagementOrgSearchDTO" resultType="kr.co.hs.management.dto.ManagementOrgDTO">
+        <![CDATA[
+			SELECT *
+			FROM (
+			     SELECT
+                      *
+			        , (SELECT DEPT_NAME FROM DEPT WHERE DEPT_CD = DP.DEPT_PARENT_CD) AS DEPT_PARENT_NAME
+                    FROM DEPT DP
+			) RESULT
+			WHERE 1=1
+		]]>
+        <if test="type != null &amp;&amp; type !='' &amp;&amp; keyword != null &amp;&amp; keyword !=''">
+            AND ${type} LIKE CONCAT('%',#{keyword},'%' )
+        </if>
+        <if test="deptLevel != null &amp;&amp; deptLevel != '' &amp;&amp; deptLevel != 999999">
+            AND DEPT_LEVEL = #{deptLevel}
+        </if>
+        <if test="useYn != null &amp;&amp; useYn != ''">
+            AND USE_YN = #{useYn}
+        </if>
+    </select>
+
+    <!-- 부서 상세정보 가져오기. -->
+    <select id="selectDeptView" parameterType="kr.co.hs.management.dto.ManagementOrgSearchDTO" resultType="kr.co.hs.management.dto.ManagementOrgDTO">
+        SELECT
+            *,
+            (SELECT DEPT_NAME FROM DEPT WHERE DEPT_CD = DP.DEPT_PARENT_CD) AS DEPT_PARENT_NAME
+        FROM DEPT DP
+        WHERE DEPT_CD = #{deptCd}
+    </select>
+
+    <!-- 레벨별 리스트가져오기. -->
+    <select id="selectOneLevelDept" parameterType="int" resultType="kr.co.hs.management.dto.ManagementOrgDTO">
+        SELECT
+        *
+        FROM DEPT
+        WHERE DEPT_LEVEL = #{deptLevel}
+        AND USE_YN = 'Y'
+    </select>
+
+    <insert id="insertOne" parameterType="kr.co.hs.management.dto.ManagementOrgDTO">
+        <![CDATA[
+            INSERT INTO DEPT(
+                      DEPT_PARENT_CD
+                ,     DEPT_LEVEL
+                ,     COLLAPSE_YN
+                ,     SORT
+                ,     DEPT_NAME
+                ,     USE_YN
+            ) VALUES(
+                      #{deptParentCd}
+                ,     #{deptLevel}
+                ,     #{collapseYn}
+                ,     #{sort}
+                ,     #{deptName}
+                ,     #{useYn}
+            )
+        ]]>
+    </insert>
+
+    <update id="updateOne" parameterType="kr.co.hs.management.dto.ManagementOrgDTO">
+		<![CDATA[
+            UPDATE DEPT SET
+                DEPT_PARENT_CD = #{deptParentCd}
+            ,	DEPT_LEVEL = #{deptLevel}
+            ,	COLLAPSE_YN = #{collapseYn}
+            ,	SORT = #{sort}
+            ,	DEPT_NAME = #{deptName}
+            ,	USE_YN = #{useYn}
+            WHERE DEPT_CD = #{deptCd}
+        ]]>
+	</update>
+</mapper>

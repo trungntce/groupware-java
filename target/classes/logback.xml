@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE xml>
+<configuration scan="true" scanPeriod="1 seconds" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+
+	<appender name="console" class="ch.qos.logback.core.ConsoleAppender">
+		<encoder>
+			<pattern>{%-5p} [%d] &lt;%c.%M&gt; : %m%n %ex</pattern>
+		</encoder>
+	</appender>
+
+	<appender name="logfile" class="ch.qos.logback.core.rolling.RollingFileAppender">
+		<append>true</append>
+		<file>C:/ps/logs/ps.log</file>
+		<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+			<fileNamePattern>C:/ps/logs/ps.log.%d{yyyy-MM-dd}
+			</fileNamePattern>
+			<maxHistory>10</maxHistory>
+		</rollingPolicy>
+		<encoder>
+			<pattern>{%-5p} [%d] &lt;%c.%M&gt; : %m%n</pattern>
+		</encoder>
+	</appender>
+	
+
+	<logger name="kr.co.hs" level="DEBUG" />
+	<logger name="org.springframework" level="INFO" />
+	<logger name="org.mybatis" level="INFO" />
+	<logger name="org.ibatis" level="INFO" />
+	<!--<logger name="BaccaraTable.selectListBaccaraTableForGameWebSocket" level="WARN" />
+	<logger name="Session.selectUserMoneyList" level="WARN" />
+	<logger name="BaccaraGame.selectListHsty" level="WARN" />
+	<logger name="MemberOnline.insertData" level="WARN" />
+	<logger name="org.springframework.security" level="DEBUG" />-->
+
+	<root level="DEBUG">
+		<appender-ref ref="console" />
+	</root>
+</configuration>

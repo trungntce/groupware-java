@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//ibatis.apache.org//DTD Mapper 3.0//EN" "http://ibatis.apache.org/dtd/ibatis-3-mapper.dtd">
+
+<mapper namespace="ApprovalSettings">
+
+    <select id="selectList" parameterType="kr.co.hs.approval.dto.ApprovalSettingsDTO" resultType="kr.co.hs.approval.dto.ApprovalSettingsDTO">
+        SELECT
+            APPROVAL_SETTINGS_ID
+            , SIGNATURE_IMAGE_PATH
+            , CREATE_DATE
+            , CREATE_ID
+        FROM
+            APPROVAL_SETTINGS
+        WHERE 1
+            <if test="createId != null &amp;&amp; createId !=''"> AND CREATE_ID = #{createId} </if>
+            <if test="useYn != null &amp;&amp; useYn !=''"> AND USE_YN = #{useYn} </if>
+        ORDER BY USE_YN DESC, CREATE_DATE DESC
+    </select>
+
+    <insert id="insertOne" parameterType="kr.co.hs.approval.dto.ApprovalSettingsDTO" useGeneratedKeys="true" keyProperty="approvalSettingsId" keyColumn="APPROVAL_SETTINGS_ID">
+        INSERT INTO APPROVAL_SETTINGS
+        (
+            SIGNATURE_IMAGE_PATH
+            , CREATE_DATE
+            , CREATE_ID
+        )
+        VALUES
+        (
+            #{signatureImagePath}
+            , NOW()
+            , #{createId}
+        )
+    </insert>
+
+    <update id="updateDisableForUser" parameterType="kr.co.hs.approval.dto.ApprovalSettingsDTO">
+        UPDATE APPROVAL_SETTINGS
+        SET USE_YN = 'N'
+        WHERE CREATE_ID = #{createId}
+    </update>
+
+    <update id="updateEnable" parameterType="kr.co.hs.approval.dto.ApprovalSettingsDTO">
+        UPDATE APPROVAL_SETTINGS
+        SET USE_YN = 'Y'
+        WHERE APPROVAL_SETTINGS_ID = #{approvalSettingsId}
+    </update>
+
+    <delete id="deleteOne" parameterType="kr.co.hs.approval.dto.ApprovalSettingsDTO">
+        DELETE FROM APPROVAL_SETTINGS
+        WHERE APPROVAL_SETTINGS_ID = #{approvalSettingsId}
+        AND CREATE_ID = #{createId}
+        AND USE_YN = 'N'
+    </delete>
+</mapper>

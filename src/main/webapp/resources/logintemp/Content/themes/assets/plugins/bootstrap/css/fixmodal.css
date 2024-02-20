@@ -1,0 +1,56 @@
+﻿
+.detail-form {
+    width: 90% !important;
+}
+
+    .detail-form .control-label {
+        width: 12%;
+    }
+
+    .detail-form .col-md-9 {
+        width: 73% !important;
+    }
+
+.col-2-form {
+    width: 90% !important;
+}
+.col-2s-form {
+    width: 80% !important;
+}
+
+.col-2m-form {
+    width: 97% !important;
+}
+.col-2f-form {
+    width: 100% !important;
+}
+
+.col-2d-form {
+    width: 70% !important;
+}
+
+@media (min-width:992px) {
+    .col-md-3 {
+        width: 27% !important;
+    }
+
+    .col-md-9 {
+        width: 73% !important;
+    }
+     .col-md-fix {
+        width: 50% !important;
+        margin-top:2.5% !important;
+    }
+}
+
+.col-pd-5 {
+    padding-left: 30px;
+}
+
+.fix-w-tb {
+    width: 110%;
+}
+
+.fix-w2-tb {
+    width: 113% !important;
+}

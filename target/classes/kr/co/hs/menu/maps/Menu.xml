@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" ?> 
+<!DOCTYPE mapper PUBLIC "-//ibatis.apache.org//DTD Mapper 3.0//EN" "http://ibatis.apache.org/dtd/ibatis-3-mapper.dtd"> 
+
+<mapper namespace="Menu">
+
+	<select id="selectOneLevelMenu" parameterType="kr.co.hs.menu.dto.MenuSearchDTO" resultType="kr.co.hs.menu.dto.MenuDTO">
+		SELECT
+				MENU_CD
+		 , 		MENU_PARENT_CD
+		 , 		MENU_TYPE
+		 , 		GET_MENU_NAME(MENU_CD, #{langCd}) AS MENU_NAME
+		 , 		MENU_ICON
+		 , 		MENU_URL
+		 , 		REPLACE(REPLACE(MENU_URL, CONCAT('/' ,SUBSTRING_INDEX(MENU_URL, '/', -1)), ''),'/','') AS MENU_URL_ID
+		 , 		COLLAPSE_YN
+		 , 		MENU_LEVEL
+		 , 		SORT
+		 , 		USE_YN
+		FROM MENU
+		WHERE MENU_CD IN (
+			SELECT MENU_CD FROM MENU_AUTH WHERE EMP_CD = #{empCd} AND USE_YN = 'Y'
+		)
+		  AND MENU_LEVEL = #{menuLevel}
+		  AND USE_YN = 'Y'
+		ORDER BY SORT
+	</select>
+
+</mapper>

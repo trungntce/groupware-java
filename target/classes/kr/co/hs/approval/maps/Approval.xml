@@ -1,0 +1,245 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//ibatis.apache.org//DTD Mapper 3.0//EN" "http://ibatis.apache.org/dtd/ibatis-3-mapper.dtd">
+
+<mapper namespace="Approval">
+    <select id="selectOne" parameterType="kr.co.hs.approval.dto.ApprovalSearchDTO"
+            resultType="kr.co.hs.approval.dto.ApprovalDTO">
+        SELECT
+            APPROVAL_ID,
+            FORM_ID,
+            TITLE,
+            CONTENTS,
+            APPROVAL_STATUS,
+            APPROVAL_STEP,
+            USE_YN,
+            CREATE_DATE,
+            CREATE_ID,
+            EMP_CD,
+            GET_EMP_NAME(EMP_CD, #{langCd}) AS EMP_NAME,
+            MODIFIED_DATE,
+            DEPT_CHANGE_HISTORY_ID,
+            DEPT_CD,
+            GET_DEPT_NAME(DEPT_CD, #{langCd}) AS DEPT_NAME,
+            POSITION_CD,
+            GET_POSITION_NAME(POSITION_CD, #{langCd}) AS POSITION_NAME
+        FROM
+            APPROVAL AS AP
+        WHERE APPROVAL_ID = #{approvalId}
+    </select>
+
+    <select id="selectList" parameterType="kr.co.hs.approval.dto.ApprovalSearchDTO" resultType="kr.co.hs.approval.dto.ApprovalDTO">
+        SELECT
+            APPROVAL_ID,
+            FORM_ID,
+            TITLE,
+            CONTENTS,
+            APPROVAL_STATUS,
+            APPROVAL_STEP,
+            USE_YN,
+            CREATE_DATE,
+            CREATE_ID,
+            EMP_CD,
+            GET_EMP_NAME(EMP_CD, #{langCd}) AS EMP_NAME,
+            MODIFIED_DATE,
+            DEPT_CHANGE_HISTORY_ID,
+            DEPT_CD,
+            GET_DEPT_NAME(DEPT_CD, #{langCd}) AS DEPT_NAME,
+            POSITION_CD,
+            GET_POSITION_NAME(POSITION_CD, #{langCd}) AS POSITION_NAME
+        FROM
+            APPROVAL AS AP
+        WHERE 1
+        <if test="formId != null &amp;&amp; formId !=''"> AND FORM_ID = #{formId} </if>
+        <if test="approvalStatus != null &amp;&amp; approvalStatus !=''"> AND APPROVAL_STATUS = #{approvalStatus} </if>
+        LIMIT #{start}, #{limit}
+    </select>
+
+    <select id="countRequestApproveByEmpCd" parameterType="kr.co.hs.approval.dto.ApprovalSearchDTO" resultType="java.lang.Integer">
+        SELECT COUNT(AP.APPROVAL_ID)
+        FROM APPROVAL AS AP
+        LEFT JOIN APPROVAL_SIGN_LINE ASL ON AP.APPROVAL_ID = ASL.APPROVAL_ID
+        LEFT JOIN APPROVAL_TRANSLATION APT ON AP.APPROVAL_ID = APT.APPROVAL_ID
+            AND APT.TRANSLATION_ID IN (SELECT MAX(TRANSLATION_ID) FROM APPROVAL_TRANSLATION GROUP BY APPROVAL_ID)
+        WHERE AP.USE_YN = 'Y'
+        <if test="empCd != null">
+            <choose>
+                <when test="myApproval != null">
+                    AND AP.EMP_CD = #{empCd}
+                </when>
+                <otherwise>
+                    AND ASL.EMP_CD = #{empCd}
+                </otherwise>
+            </choose>
+        </if>
+        <choose>
+            <when test="listStatus != null &amp;&amp; listStatus.size() > 0">
+                AND ASL.APPROVAL_STATUS IN
+                <foreach item="item" index="index" collection="listStatus" open="(" separator="," close=")">
+                    #{item}
+                </foreach>
+            </when>
+        </choose>
+        <choose>
+            <when test="listDeptCd != null">
+                AND AP.DEPT_CD IN
+                <foreach item="item" index="index" collection="listDeptCd" open="(" separator="," close=")">
+                    #{item}
+                </foreach>
+            </when>
+        </choose>
+        <if test="listApprovalStatus != null &amp;&amp; listApprovalStatus.size() > 0">
+            AND AP.APPROVAL_STATUS IN
+            <foreach item="item" index="index" collection="listApprovalStatus" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+        </if>
+        <if test="keywordType != null &amp;&amp; keywordType !='' &amp;&amp; keyword != null &amp;&amp; keyword !=''"> AND AP.${keywordType} LIKE CONCAT('%',#{keyword},'%' ) </if>
+        <if test="approvalId != null &amp;&amp; approvalId !=''"> AND AP.APPROVAL_ID = #{approvalId} </if>
+        <if test="approvalStatus != null &amp;&amp; approvalStatus !=''"> AND AP.APPROVAL_STATUS = #{approvalStatus} </if>
+        <if test="approvalRole != null &amp;&amp; approvalRole !=''"> AND ASL.APPROVAL_ROLE = #{approvalRole}</if>
+        <if test="startDate != null &amp;&amp; startDate !=''"> <![CDATA[ AND DATE_FORMAT(#{startDate}, '%y-%m-%d') <= DATE_FORMAT(AP.CREATE_DATE, '%y-%m-%d')  ]]> </if>
+        <if test="endDate != null &amp;&amp; endDate !=''"> <![CDATA[ AND DATE_FORMAT(AP.CREATE_DATE, '%y-%m-%d') <= DATE_FORMAT(#{endDate}, '%y-%m-%d') ]]> </if>
+    </select>
+
+    <select id="selectRequestApproveByEmpCd" parameterType="kr.co.hs.approval.dto.ApprovalSearchDTO" resultType="kr.co.hs.approval.dto.ApprovalDTO">
+        SELECT
+            AP.APPROVAL_ID,
+            AP.FORM_ID,
+            AP.TITLE,
+            AP.CONTENTS,
+            AP.APPROVAL_STATUS,
+            AP.APPROVAL_STEP,
+            AP.USE_YN,
+            AP.CREATE_DATE,
+            AP.CREATE_ID,
+            AP.EMP_CD,
+            AP.MODIFIED_DATE,
+            AP.DEPT_CHANGE_HISTORY_ID,
+            AP.DEPT_CD,
+            GET_DEPT_NAME(AP.DEPT_CD, #{langCd}) AS DEPT_NAME,
+            AP.POSITION_CD,
+            GET_POSITION_NAME(AP.POSITION_CD, #{langCd}) AS POSITION_NAME,
+            ASL.APPROVAL_ROLE,
+            ASL.SIGN_LINE_ID,
+            ASL.EMP_ID AS SIGN_EMP_ID,
+            ASL.EMP_CD AS SIGN_EMP_CD,
+            ASL.STEP AS SIGN_STEP,
+            ASL.APPROVAL_STATUS AS APPROVAL_STATUS_SIGN,
+            APT.TRANSLATION_ID,
+            GET_EMP_NAME(T.EMP_CD, #{langCd}) AS TRANSLATOR_NAME
+        FROM APPROVAL AS AP
+        LEFT JOIN APPROVAL_SIGN_LINE ASL ON AP.APPROVAL_ID = ASL.APPROVAL_ID
+        LEFT JOIN APPROVAL_TRANSLATION APT ON AP.APPROVAL_ID = APT.APPROVAL_ID
+            AND APT.TRANSLATION_ID IN (SELECT MIN(TRANSLATION_ID) FROM APPROVAL_TRANSLATION GROUP BY APPROVAL_ID)
+        LEFT JOIN TRANSLATION T ON APT.TRANSLATION_ID = T.TRANSLATION_ID
+        WHERE AP.USE_YN = 'Y'
+        <if test="empCd != null">
+            <choose>
+                <when test="myApproval != null">
+                    AND AP.EMP_CD = #{empCd}
+                </when>
+                <otherwise>
+                    AND ASL.EMP_CD = #{empCd}
+                </otherwise>
+            </choose>
+        </if>
+        <choose>
+            <when test="listStatus != null &amp;&amp; listStatus.size() > 0">
+                AND ASL.APPROVAL_STATUS IN
+                <foreach item="item" index="index" collection="listStatus" open="(" separator="," close=")">
+                    #{item}
+                </foreach>
+            </when>
+        </choose>
+        <choose>
+            <when test="listDeptCd != null">
+                AND AP.DEPT_CD IN
+                <foreach item="item" index="index" collection="listDeptCd" open="(" separator="," close=")">
+                    #{item}
+                </foreach>
+            </when>
+        </choose>
+        <if test="listApprovalStatus != null &amp;&amp; listApprovalStatus.size() > 0">
+            AND AP.APPROVAL_STATUS IN
+            <foreach item="item" index="index" collection="listApprovalStatus" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+        </if>
+        <if test="keywordType != null &amp;&amp; keywordType !='' &amp;&amp; keyword != null &amp;&amp; keyword !=''"> AND AP.${keywordType} LIKE CONCAT('%',#{keyword},'%' ) </if>
+        <if test="approvalId != null &amp;&amp; approvalId !=''"> AND AP.APPROVAL_ID = #{approvalId} </if>
+        <if test="approvalStatus != null &amp;&amp; approvalStatus !=''"> AND AP.APPROVAL_STATUS = #{approvalStatus} </if>
+        <if test="approvalRole != null &amp;&amp; approvalRole !=''"> AND ASL.APPROVAL_ROLE = #{approvalRole}</if>
+        <if test="startDate != null &amp;&amp; startDate !=''"> <![CDATA[ AND DATE_FORMAT(#{startDate}, '%y-%m-%d') <= DATE_FORMAT(AP.CREATE_DATE, '%y-%m-%d')  ]]> </if>
+        <if test="endDate != null &amp;&amp; endDate !=''"> <![CDATA[ AND DATE_FORMAT(AP.CREATE_DATE, '%y-%m-%d') <= DATE_FORMAT(#{endDate}, '%y-%m-%d') ]]> </if>
+        GROUP BY APPROVAL_ID
+        <choose>
+            <when test="orderByColumn != null &amp;&amp; orderByColumn != ''"> ORDER BY ${orderByColumn} ${orderByType} </when>
+            <otherwise> ORDER BY  AP.CREATE_DATE DESC </otherwise>
+        </choose>
+        LIMIT #{start}, #{limit}
+    </select>
+
+
+    <insert id="insertOne" parameterType="kr.co.hs.approval.dto.ApprovalDTO" useGeneratedKeys="true" keyProperty="approvalId" keyColumn="APPROVAL_ID">
+        INSERT INTO APPROVAL
+        (
+            FORM_ID
+            ,	TITLE
+            ,	CONTENTS
+            ,	APPROVAL_STATUS
+            ,	APPROVAL_STEP
+            ,	CREATE_ID
+            ,	EMP_CD
+            ,	DEPT_CHANGE_HISTORY_ID
+            ,	DEPT_CD
+            ,	POSITION_CD
+        )
+        VALUES
+        (
+            #{formId}
+            , #{title}
+            , #{contents}
+            , #{approvalStatus}
+            , #{approvalStep}
+            , #{createId}
+            , #{empCd}
+            , #{deptChangeHistoryId}
+            , #{deptCd}
+            , #{positionCd}
+        )
+
+    </insert>
+    <update id="updateOne" parameterType="kr.co.hs.approval.dto.ApprovalDTO">
+        UPDATE
+            APPROVAL
+        SET
+            FORM_ID = #{formId}
+            , TITLE = #{title}
+            , CONTENTS = #{contents}
+            , APPROVAL_STATUS = #{approvalStatus}
+            , APPROVAL_STEP = #{approvalStep}
+            , USE_YN = #{useYn}
+            , CREATE_ID = #{createId}
+            , EMP_CD = #{empCd}
+            , DEPT_CHANGE_HISTORY_ID = #{deptChangeHistoryId}
+            , DEPT_CD = #{deptCd}
+            , POSITION_CD = #{positionCd}
+        WHERE
+            APPROVAL_ID = #{approvalId}
+    </update>
+
+    <update id="disable" parameterType="kr.co.hs.approval.dto.ApprovalDTO">
+        UPDATE APPROVAL
+        SET USE_YN = 'N'
+        WHERE APPROVAL_ID = #{approvalId}
+    </update>
+
+    <update id="updateContent" parameterType="kr.co.hs.approval.dto.ApprovalDTO">
+        UPDATE APPROVAL
+        SET TITLE = #{title}
+        , CONTENTS = #{contents}
+        , APPROVAL_STATUS = #{approvalStatus}
+        , MODIFIED_DATE = NOW()
+        WHERE APPROVAL_ID = #{approvalId}
+    </update>
+</mapper>

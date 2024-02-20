@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//ibatis.apache.org//DTD Mapper 3.0//EN" "http://ibatis.apache.org/dtd/ibatis-3-mapper.dtd">
+<mapper namespace="CommonSearch">
+    <select id="empCommonSearch" parameterType="hashmap" resultType="kr.co.hs.common.dto.SearchDTO">
+        SELECT emp_cd FROM emp WHERE use_yn = 'Y' and emp_name LIKE ${key}
+    </select>
+
+    <select id="positionCommonSearch" parameterType="hashmap" resultType="kr.co.hs.common.dto.SearchDTO">
+        SELECT position_cd FROM position WHERE use_yn = 'Y' and position_name LIKE ${key}
+    </select>
+
+    <select id="deptCommonSearch" parameterType="hashmap" resultType="kr.co.hs.common.dto.SearchDTO">
+        SELECT dept_cd FROM dept WHERE use_yn = 'Y' AND dept_name LIKE ${key}
+    </select>
+
+</mapper>

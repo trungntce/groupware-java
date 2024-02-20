@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//ibatis.apache.org//DTD Mapper 3.0//EN" "http://ibatis.apache.org/dtd/ibatis-3-mapper.dtd">
+
+<mapper namespace="Dept">
+
+    <!-- 부서 리스트 가져오기. -->
+    <select id="selectDeptList" parameterType="String" resultType="kr.co.hs.deptconfig.dto.DeptDTO">
+        SELECT
+        *,
+        (SELECT DEPT_NAME FROM DEPT WHERE DEPT_CD = DP.DEPT_PARENT_CD) AS DEPT_PARENT_NAME
+        FROM DEPT DP
+    </select>
+
+    <!-- 부서 상세정보 가져오기. -->
+    <select id="selectDeptView" parameterType="kr.co.hs.management.dto.ManagementOrgSearchDTO" resultType="kr.co.hs.deptconfig.dto.DeptDTO">
+        SELECT
+            *,
+            (SELECT DEPT_NAME FROM DEPT WHERE DEPT_CD = DP.DEPT_PARENT_CD) AS DEPT_PARENT_NAME
+        FROM DEPT DP
+        WHERE USE_YN = 'Y'
+        AND DEPT_CD = #{deptCd}
+    </select>
+
+    <!-- 레벨별 리스트가져오기. -->
+    <select id="selectOneLevelDept" parameterType="kr.co.hs.deptconfig.dto.DeptSearchDTO" resultType="kr.co.hs.deptconfig.dto.DeptDTO">
+        SELECT
+        *
+        FROM DEPT
+        WHERE DEPT_LEVEL = #{deptLevel}
+        AND USE_YN = 'Y'
+    </select>
+
+    <select id="selectDeptLevelList" parameterType="String" resultType="kr.co.hs.deptconfig.dto.DeptDTO">
+        <![CDATA[
+            SELECT
+            DEPT_CD
+            ,   REPLACE(GET_DEPT_LEVEL_NAME(DEPT_CD, #{langCd}), '<br>', '-') AS DEPT_LEVEL_NAME
+            FROM DEPT
+            WHERE USE_YN = 'Y'
+        ]]>
+    </select>
+
+    <select id="selectDeptTreeList" parameterType="String" resultType="kr.co.hs.deptconfig.dto.DeptTreeDTO">
+        <![CDATA[
+        SELECT
+                DEPT_CD AS ID
+        ,       DEPT_PARENT_CD AS PARENT
+        ,       REPLACE(GET_DEPT_LEVEL_NAME(DEPT_CD, #{langCd}), '<br>', '-') AS DEPT_NAME
+        FROM DEPT
+        WHERE USE_YN = 'Y'
+        ]]>
+    </select>
+
+    <select id="getDeptLang" parameterType="String"  resultType="kr.co.hs.deptconfig.dto.DeptDTO">
+        <![CDATA[
+        SELECT
+            DEPT_CD
+             , 	GET_DEPT_LEVEL_NAME(DEPT_CD, #{langCd}) AS DEPT_NAME
+        FROM DEPT
+        WHERE USE_YN = 'Y'
+        ]]>
+    </select>
+
+
+    <select id="getdepthis" parameterType="int"  resultType="int">
+        <![CDATA[
+            select dept_change_history_id as deptChangeHistoryId from hsgw.dept_change_history where dept_cd=#{deptCd} order by dept_change_history_id desc limit 1
+        ]]>
+    </select>
+
+    <select id="selectDeptLevel" parameterType="String" resultType="kr.co.hs.deptconfig.dto.DeptDTO">
+        <![CDATA[
+        SELECT dept_cd,GET_DEPT_LEVEL_NAME(dept_cd,#{langCd}) AS dept_name FROM hsgw.dept
+        where dept_level <= 3
+        and use_yn = 'Y'
+        ]]>
+    </select>
+
+    <select id="selectDeptLowLevel" parameterType="kr.co.hs.deptconfig.dto.DeptSearchDTO" resultType="kr.co.hs.deptconfig.dto.DeptDTO">
+        <if test='translationSpecific == "Y" || adminSpecitfic == "Y"'>
+            CALL SPEC_GET_DEPT_LOW_LEVEL(1,#{langCd});
+        </if>
+        <if test='translationSpecific == "N" &amp;&amp; adminSpecitfic == "N"'>
+        <![CDATA[
+            CALL SPEC_GET_DEPT_LOW_LEVEL(#{deptCd},#{langCd});
+        ]]>
+        </if>
+        <if test='translationSpecific == "Specific" &amp;&amp; adminSpecitfic == "N"'>
+            <![CDATA[
+            CALL SPEC_GET_DEPT_LOW_LEVEL(GET_EMP_DEPT_COMPANY(#{empCd}),#{langCd});
+            ]]>
+        </if>
+        <if test='translationSpecific == "Accounting" &amp;&amp; adminSpecitfic == "N"'>
+            <![CDATA[
+            CALL SPEC_GET_DEPT_LEVEL_ACCOUNTING_PROJECT(#{empCd}, #{langCd});
+            ]]>
+        </if>
+    </select>
+
+    <select id="selectCompany" parameterType="String" resultType="kr.co.hs.deptconfig.dto.DeptDTO">
+        <![CDATA[
+        SELECT dept_cd,GET_DEPT_LEVEL_NAME(dept_cd,#{langCd}) AS dept_name FROM hsgw.dept
+        where dept_level = 2
+        and use_yn = 'Y'
+        ]]>
+    </select>
+
+    <select id="selectDeptBoard" parameterType="String" resultType="kr.co.hs.deptconfig.dto.DeptDTO">
+        <![CDATA[
+        SELECT dept_cd,GET_DEPT_LEVEL_NAME(dept_cd,#{langCd}) AS dept_name FROM hsgw.dept
+        where dept_level = 3
+          and use_yn = 'Y'
+        ]]>
+    </select>
+
+    <select id="selectDeptLevelbyDeptCd" parameterType="hashmap" resultType="String">
+        <![CDATA[
+        SELECT GET_DEPT_LEVEL_NAME(dept_cd,#{langCd}) AS dept_name FROM hsgw.dept
+        where dept_cd=#{deptCd}
+        ]]>
+    </select>
+
+    <select id="selectListDeptId" parameterType="hashmap" resultType="kr.co.hs.deptconfig.dto.DeptDTO">
+        <![CDATA[
+        SELECT dept_cd FROM dept WHERE GET_DEPT_LEVEL_NAME(dept_cd,#{langCd}) LIKE CONCAT('%',#{deptString},'%' )
+        ]]>
+    </select>
+
+</mapper>

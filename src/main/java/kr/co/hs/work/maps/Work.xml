@@ -1,0 +1,277 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//ibatis.apache.org//DTD Mapper 3.0//EN" "http://ibatis.apache.org/dtd/ibatis-3-mapper.dtd">
+
+<mapper namespace="songwork">
+
+    <select id="getlistWork" parameterType="hashmap" resultType="kr.co.hs.work.dto.WorkDTO">
+        <![CDATA[
+        select work.*,emp_name,dept_level_vertical_name as dept_name,position_name,
+                ( SELECT COUNT(dwt.work_id) FROM work_translation dwt left JOIN translation t on dwt.translation_id = t.translation_id WHERE work_id=work.work_id AND t.use_yn='Y') AS translation_status,
+                ROW_NUMBER() OVER (ORDER BY work.work_id asc) AS ROWNUM
+                from work
+                JOIN emp_detail ON work.emp_cd=emp_detail.emp_cd
+                where use_yn = 'Y' AND emp_detail.lang_cd=#{langCd}
+        ]]>
+        <if test='translationYnPara == "N" &amp;&amp; adminYnPara=="N" '>
+            <![CDATA[
+                AND dept_cd IN
+                (
+                    SELECT dept_cd FROM emp JOIN position p ON emp.position_cd=p.position_cd WHERE dept_cd IN
+                        (
+                           SELECT * FROM (
+                                SELECT dept_cd FROM emp WHERE emp_cd=#{empCd}
+                                UNION ALL
+                                select  dept_cd
+                                from    (select * from dept order by dept_parent_cd, dept_cd) dept,
+                                (select @pv := (SELECT dept_cd FROM emp WHERE emp_cd=#{empCd})) initialisation
+                                where   find_in_set(dept_parent_cd, @pv) > 0
+                                and     @pv := concat(@pv, ',', dept_cd)
+                            ) as noi
+                        )
+                    AND p.position_level >= (SELECT P1.position_level FROM emp E1 JOIN position P1 ON E1.position_cd=P1.position_cd WHERE  E1.emp_cd=#{empCd}) and emp.use_yn='Y'
+                )
+            ]]>
+        </if>
+        <if test="dateSql != null &amp;&amp; dateSql !=''">
+            <![CDATA[  ${dateSql}  ]]>
+        </if>
+        <if test="deptSearch != null &amp;&amp; deptSearch !=''">
+            <![CDATA[ ${deptSearch} ]]>
+        </if>
+        <if test="translationStatus != null &amp;&amp; translationStatus !=''">
+            <![CDATA[  ${translationStatus}  ]]>
+        </if>
+        <if test="workStatusSql != null &amp;&amp; workStatusSql !=''">
+            <![CDATA[  ${workStatusSql}  ]]>
+        </if>
+        <if test="inputSearchSql != null &amp;&amp; inputSearchSql !=''">
+            <![CDATA[  ${inputSearchSql}  ]]>
+        </if>
+        <![CDATA[
+            ORDER BY ${str}
+            LIMIT #{recordsPerPage} OFFSET #{startRow}
+        ]]>
+    </select>
+
+    <select id="getSumRowWork" parameterType="hashmap" resultType="int">
+        <![CDATA[
+            select COUNT(work_id) as sum_row
+                from work
+                JOIN emp_detail ON work.emp_cd=emp_detail.emp_cd
+                where use_yn = 'Y' AND emp_detail.lang_cd=#{langCd}
+            ]]>
+        <if test='translationYnPara == "N" &amp;&amp; adminYnPara=="N" '>
+            <![CDATA[
+                AND dept_cd IN
+                (
+                SELECT dept_cd FROM emp JOIN position p ON emp.position_cd=p.position_cd WHERE dept_cd IN
+                (
+                SELECT * FROM (
+                SELECT dept_cd FROM emp WHERE emp_cd=#{empCd}
+                UNION ALL
+                select  dept_cd
+                from    (select * from dept order by dept_parent_cd, dept_cd) dept,
+                (select @pv := (SELECT dept_cd FROM emp WHERE emp_cd=#{empCd})) initialisation
+                where   find_in_set(dept_parent_cd, @pv) > 0
+                and     @pv := concat(@pv, ',', dept_cd)
+                ) as noi
+                )
+                AND p.position_level >= (SELECT P1.position_level FROM emp E1 JOIN position P1 ON E1.position_cd=P1.position_cd WHERE  E1.emp_cd=#{empCd}) and emp.use_yn='Y'
+                )
+            ]]>
+        </if>
+
+        <if test="dateSql != null &amp;&amp; dateSql !=''">
+            <![CDATA[  ${dateSql}  ]]>
+        </if>
+        <if test="deptSearch != null &amp;&amp; deptSearch !=''">
+            <![CDATA[  ${deptSearch}  ]]>
+        </if>
+        <if test="translationStatus != null &amp;&amp; translationStatus !=''">
+            <![CDATA[  ${translationStatus}  ]]>
+        </if>
+        <if test="workStatusSql != null &amp;&amp; workStatusSql !=''">
+            <![CDATA[  ${workStatusSql}  ]]>
+        </if>
+        <if test="inputSearchSql != null &amp;&amp; inputSearchSql !=''">
+            <![CDATA[  ${inputSearchSql}  ]]>
+        </if>
+
+    </select>
+
+
+    <select id="getlistWorkByID" parameterType="hashmap" resultType="kr.co.hs.work.dto.WorkDTO">
+        select *,
+        GET_DEPT_NAME(dept_change_history_id, #{langCd}) as history_dept_name,
+        GET_EMP_NAME(emp_cd, #{langCd})                  as emp_name,
+        GET_DEPT_LEVEL_NAME(DEPT_CD, #{langCd}) AS DEPT_NAME,
+        GET_POSITION_NAME(position_cd, #{langCd})        as position_name
+        from work
+        WHERE work_id = #{workId}
+    </select>
+
+    <select id="getEmpByDept" parameterType="hashmap" resultType="kr.co.hs.emp.dto.EmpDTO">
+        SELECT emp_cd, concat(GET_EMP_NAME(emp_cd, #{langCd}),'(', GET_POSITION_NAME(position_cd,#{langCd}),')') as emp_name
+        FROM emp WHERE  emp.use_yn='Y' and emp.dept_cd IN
+         (
+             SELECT * FROM
+                 (
+                     SELECT #{deptCd} AS dept_cd
+                     UNION ALL
+                     select  dept_cd
+                     from    (select * from dept WHERE use_yn='Y' order by dept_parent_cd, dept_cd ) dept,
+                             (select @pv := #{deptCd}) initialisation
+                     where   find_in_set(dept_parent_cd, @pv) > 0
+                       and     @pv := concat(@pv, ',', dept_cd)
+                 ) AS t1
+         )
+    </select>
+
+    <select id="getCoporation" parameterType="hashmap" resultType="kr.co.hs.oldwork.dto.CoperationDTO">
+        select wc.*,
+        GET_EMP_NAME(wc.emp_cd, #{langCd})            as emp_name,
+        GET_DEPT_LEVEL_NAME(emp.DEPT_CD, #{langCd}) AS DEPT_NAME,
+        GET_POSITION_NAME(emp.position_cd, #{langCd}) as position_name,
+        ROW_NUMBER() OVER (ORDER BY wc.work_cooperation_id asc) AS ROWNUM
+        from work_cooperation wc
+        join emp on wc.emp_cd = emp.emp_cd
+        where work_id = #{workId}
+    </select>
+
+    <select id="getEmpForWork" parameterType="int" resultType="kr.co.hs.emp.dto.EmpDTO">
+        select *,
+        (select dh.dept_change_history_id
+        from dept_change_history dh
+        where dh.dept_cd = emp.dept_cd
+        order by dh.dept_change_history_id limit 1) as dept_change_history_id
+        from emp
+        where emp.emp_cd=#{empCd} limit 1
+    </select>
+
+    <insert id="insertCoForWork" parameterType="kr.co.hs.oldwork.dto.CoperationDTO">
+        INSERT INTO work_cooperation
+        ( work_id
+        , emp_cd
+        , dept_change_history_id
+        , dept_cd
+        , position_cd
+        , work_check_yn
+        , work_check_dt
+        , reg_dt)
+        VALUES ( #{workId}
+        , #{empCd}
+        , #{deptChangeHistoryId}
+        , #{deptCd}
+        , #{positionCd}
+        , #{workCheckYn}
+        , null
+        , now()
+        )
+    </insert>
+
+    <insert id="insertCoForWorkNewWork" parameterType="kr.co.hs.oldwork.dto.CoperationDTO">
+        INSERT INTO work_cooperation
+        ( work_id
+        , emp_cd
+        , dept_change_history_id
+        , dept_cd
+        , position_cd
+        , work_check_yn
+        , work_check_dt
+        , reg_dt)
+        VALUES ( (SELECT MAX(work_id) AS work_id FROM work)
+               , #{empCd}
+               , #{deptChangeHistoryId}
+               , #{deptCd}
+               , #{positionCd}
+               , #{workCheckYn}
+               , null
+               , now()
+               )
+    </insert>
+    <delete id="xoaCo" parameterType="String">
+        delete from work_cooperation where work_cooperation_id=#{id} limit 1
+    </delete>
+
+    <update id="xoaTran" parameterType="String">
+        update translation set use_yn='N' where translation_id=#{id} limit 1
+    </update>
+
+    <update id="xoaWork" parameterType="hashmap">
+        update work
+        set use_yn='N'
+        WHERE ${param}
+    </update>
+    <update id="updateWork" parameterType="kr.co.hs.work.dto.WorkDTO">
+        UPDATE work
+        SET lang_cd = #{langCd}
+        ,title = #{title}
+        ,contents = #{contents}
+        ,important_yn = #{importantYn}
+        ,work_start_dt = #{workStartDt}
+        ,work_end_dt = #{workEndDt}
+        ,use_yn ='Y'
+        WHERE work_id=#{workId}
+    </update>
+
+    <update id="updateWorkStatus" parameterType="kr.co.hs.work.dto.WorkDTO">
+        UPDATE WORK SET CONTENTS = #{contents} WHERE WORK_ID = #{workId}
+    </update>
+
+    <insert id="addWork" parameterType="kr.co.hs.work.dto.WorkDTO">
+        INSERT INTO work
+        (lang_cd
+        ,emp_cd
+        ,dept_change_history_id
+        ,dept_cd
+        ,position_cd
+        ,work_status
+        ,title
+        ,contents
+        ,important_yn
+        ,work_start_dt
+        ,work_end_dt
+        ,reg_dt
+        ,use_yn)
+        VALUES
+        (#{langCd}
+        ,#{empCd}
+        ,#{deptChangeHistoryId}
+        ,#{deptCd}
+        ,#{positionCd}
+        ,"0"
+        ,#{title}
+        ,#{contents}
+        ,#{importantYn}
+        ,#{workStartDt}
+        ,#{workEndDt}
+        ,now()
+        ,"Y");
+
+    </insert>
+
+    <update id="updateInTran" parameterType="hashmap">
+        update translation set translation_status=#{trangthai} where translation_id=#{id}
+    </update>
+
+    <update id="updateInCo" parameterType="hashmap">
+        update work_cooperation
+        set work_check_yn=#{trangthai}
+        , work_check_dt = now()
+        where work_cooperation_id=#{id}
+    </update>
+
+    <delete id="deleteCop" parameterType="hashmap">
+        delete from work_cooperation where work_id = #{workId} and emp_cd not in ${empList};
+    </delete>
+
+    <delete id="deleteCopEmpty" parameterType="hashmap">
+        delete from work_cooperation where work_id = #{workId};
+    </delete>
+
+    <select id="empCheckExitCop" parameterType="kr.co.hs.work.dto.WorkDTO" resultType="int">
+        SELECT count(*) FROM work_cooperation
+        WHERE work_id = #{workId}
+          AND emp_cd = #{empCd}
+    </select>
+</mapper>

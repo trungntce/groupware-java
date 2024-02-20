@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//ibatis.apache.org//DTD Mapper 3.0//EN" "http://ibatis.apache.org/dtd/ibatis-3-mapper.dtd">
+<mapper namespace="songmywork">
+
+    <select id="getlistMyWork" parameterType="hashmap" resultType="kr.co.hs.work.dto.WorkDTO">
+        <![CDATA[
+        select work.*,emp_name,dept_level_vertical_name as dept_name,position_name,
+                ( SELECT COUNT(dwt.work_id) FROM work_translation dwt left JOIN translation t on dwt.translation_id = t.translation_id WHERE work_id=work.work_id AND t.use_yn='Y') AS translation_status,
+                ROW_NUMBER() OVER (ORDER BY work.work_id asc) AS ROWNUM
+                from work
+                JOIN emp_detail ON work.emp_cd=emp_detail.emp_cd
+                where use_yn = 'Y' AND emp_detail.lang_cd=#{langCd} and work.emp_cd=#{empCd}
+        ]]>
+        <if test="dateSql != null &amp;&amp; dateSql !=''">
+            <![CDATA[  ${dateSql}  ]]>
+        </if>
+        <if test="deptSearch != null &amp;&amp; deptSearch !=''">
+            <![CDATA[  ${deptSearch}  ]]>
+        </if>
+        <if test="translationStatus != null &amp;&amp; translationStatus !=''">
+            <![CDATA[  ${translationStatus}  ]]>
+        </if>
+        <if test="workStatusSql != null &amp;&amp; workStatusSql !=''">
+            <![CDATA[  ${workStatusSql}  ]]>
+        </if>
+        <if test="inputSearchSql != null &amp;&amp; inputSearchSql !=''">
+            <![CDATA[  ${inputSearchSql}  ]]>
+        </if>
+        <![CDATA[
+            ORDER BY ${str}
+            LIMIT #{recordsPerPage} OFFSET #{startRow}
+        ]]>
+    </select>
+    <select id="getSumRowMyWork" parameterType="hashmap" resultType="int">
+        <![CDATA[
+            select COUNT(work_id) as sum_row
+                from work
+                JOIN emp_detail ON work.emp_cd=emp_detail.emp_cd
+                where use_yn = 'Y' AND emp_detail.lang_cd=#{langCd} and work.emp_cd=#{empCd}
+            ]]>
+        <if test="dateSql != null &amp;&amp; dateSql !=''">
+            <![CDATA[  ${dateSql}  ]]>
+        </if>
+        <if test="deptSearch != null &amp;&amp; deptSearch !=''">
+            <![CDATA[  ${deptSearch}  ]]>
+        </if>
+        <if test="translationStatus != null &amp;&amp; translationStatus !=''">
+            <![CDATA[  ${translationStatus}  ]]>
+        </if>
+        <if test="workStatusSql != null &amp;&amp; workStatusSql !=''">
+            <![CDATA[  ${workStatusSql}  ]]>
+        </if>
+        <if test="inputSearchSql != null &amp;&amp; inputSearchSql !=''">
+            <![CDATA[  ${inputSearchSql}  ]]>
+        </if>
+    </select>
+
+    <select id="getlistMyWorkMain" parameterType="hashmap" resultType="kr.co.hs.work.dto.WorkDTO">
+        select *,
+        GET_DEPT_NAME(dept_change_history_id, #{langCd}) as history_dept_name,
+        GET_EMP_NAME(emp_cd, #{langCd})                  as emp_name,
+        GET_DEPT_LEVEL_NAME(DEPT_CD, #{langCd}) AS DEPT_NAME,
+        GET_POSITION_NAME(position_cd, #{langCd})        as position_name
+        from
+        (
+            select * from work
+            where use_yn = 'Y' and emp_cd=#{empCd} order by work_id desc
+            limit 0,5
+        ) result
+
+    </select>
+
+</mapper>

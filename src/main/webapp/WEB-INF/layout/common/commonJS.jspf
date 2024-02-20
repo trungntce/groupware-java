@@ -1,0 +1,26 @@
+<script type="text/javascript" src="${_ctx}/resources/js/pace.min.js"></script>
+<%--<script type="text/javascript" src="${_ctx}/resources/js/jquery.min.js"></script>--%>
+<script type="text/javascript" src="${_ctx}/resources/js/bootstrap-toastr/jquery-3.5.1.js"></script>
+<script type="text/javascript" src="${_ctx}/resources/js/jquery-ui.min.js"></script>
+<script type="text/javascript" src="${_ctx}/resources/js/bootstrap.bundle.min.js"></script>
+<script type="text/javascript" src="${_ctx}/resources/js/jquery.slimscroll.min.js"></script>
+<script type="text/javascript" src="${_ctx}/resources/js/js.cookie.js"></script>
+<script type="text/javascript" src="${_ctx}/resources/js/app.js"></script>
+<script type="text/javascript" src="${_ctx}/resources/js/theme/default.js"></script>
+<script type="text/javascript" src="${_ctx}/resources/js/common.js"></script>
+<script type="text/javascript" src="${_ctx}/resources/js/treeview/treeview.min.js"></script>
+<script type="text/javascript" src="${_ctx}/resources/js/bootstrap-toastr/toastr.min.js"></script>
+<script type="text/javascript" src="${_ctx}/resources/js/bootstrap-toastr/jquery.validate.js"></script>
+<script type="text/javascript" src="${_ctx}/resources/js/plugins/signature-pad/signature_pad.min.js"></script>
+
+<script type="text/javascript" src="${_ctx}/resources/js/socket/sockjs.min.js"></script>
+<script type="text/javascript" src="${_ctx}/resources/js/socket/stomp.min.js"></script>
+
+
+
+<script src="${_ctx}/resources/css/maincss/vendor/flexslider/jquery.flexslider-min.js"></script>
+<script src="${_ctx}/resources/css/maincss/vendor/chosen/chosen.jquery.min.js"></script>
+<script src="${_ctx}/resources/css/maincss/vendor/masonry/imagesloaded.pkgd.min.js"></script>
+<script src="${_ctx}/resources/css/maincss/vendor/masonry/masonry.pkgd.min.js"></script>
+<script src="${_ctx}/resources/css/maincss/js/theme.plugins.js"></script>
+<%--<script src="${_ctx}/resources/css/maincss/js/theme.js"></script>--%>

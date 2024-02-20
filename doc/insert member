@@ -1,0 +1,7 @@
+INSERT INTO TB_MEMBER(
+	MBNO, USER_ID, USER_PW, NICK, ROLE, EMAIL, TEL, STATUS, MEMO, REGDT
+) VALUES (
+	0, 'test', '1234', 'testnick', 'USER', '', '', 9,'',  sysdate
+);
+
+COMMIT;

@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//ibatis.apache.org//DTD Mapper 3.0//EN" "http://ibatis.apache.org/dtd/ibatis-3-mapper.dtd">
+<mapper namespace="EventNotice">
+    <select id="selectBellNotice" parameterType="hashmap" resultType="kr.co.hs.common.dto.NoticeDTO">
+        <![CDATA[
+            SELECT EN.*
+                 , GET_EMP_NAME(en.emp_cd, #{langCd}) as EMP_NAME
+                 ,case
+                      when en.`type` = 'NOTICE'
+                          then "/board/notice/free/view.hs?boardId="
+                      when en.`type` = 'DEPT'
+                          then "/board/notice/department/view.hs?boardId="
+                      when en.`type` = 'COMPANY'
+                          then "/board/notice/company/view.hs?boardId="
+                      when en.`type` = 'GROUP'
+                          then "/board/notice/group/view.hs?boardId="
+                      when en.`type` = 'WORK'
+                          then "/work/mywork/detail.hs?id="
+                      when en.`type` = 'DAYWORK'
+                          then "/work/mydaywork/detail.hs?id="
+                      when en.`type` = 'TRANS'
+                          then "/translation/locationtran.hs?"
+                      when en.`type` = 'PROJECT'
+                          then "/project/project/dayproject.hs?pjId="
+                      when en.`type` = 'DAYPROJECT'
+                          then "/project/project/dayproject.hs?pjId="
+                      when en.`type` = 'DAYPROJECTITEM'
+                          then "/project/project/dayproject.hs?pjId="
+                      when en.`type` = 'APPROVAL_TRANSLATE'
+                          then "/approval/translate/wait/update.hs?approvalId="
+                      when en.`type` = 'APPROVAL_TRANSLATE_CONFIRM'
+                          then "/approval/translate/confirm/update.hs?approvalId="
+                      when en.`type` = 'APPROVAL_CONFIRM'
+                          then "/approval/wait/waiting/detail.hs?approvalId="
+                      when en.`type` = 'APPROVAL_FINISH'
+                          then "/approval/finish/detail.hs?approvalId="
+                      when en.`type` = 'APPROVAL_CANCEL'
+                          then "/approval/cancel/detail.hs?approvalId="
+                END AS LINK
+                 , case
+                       when enr.status = 'Y'
+                           then "opacity: 1;"
+                       else
+                           "font-weight: bold;"
+                end as html_str_open,
+                time_up as reg_dt,
+                concat("'",en.type,"'") as pre_str
+            FROM (SELECT * FROM event_notice_receiver
+                  WHERE emp_cd = #{empCd}
+                    AND use_yn = 'Y'
+                  ORDER BY EVENT_NOTICE_receiver_ID DESC
+                      LIMIT 5 OFFSET 0)enr
+                     JOIN event_notice en
+                          ON enr.event_notice_id = en.event_notice_id
+                     JOIN emp_detail ED ON ED.EMP_CD = EN.EMP_CD AND ED.lang_cd = #{langCd}
+            ORDER BY en.event_notice_id DESC
+        ]]>
+    </select>
+
+    <select id="selectAllNotice" parameterType="hashmap" resultType="kr.co.hs.common.dto.NoticeDTO">
+        <![CDATA[
+            SELECT * FROM (select en.*
+               , case
+                    when en.`type` = 'NOTICE'
+                        then "/board/notice/free/view.hs?boardId="
+                    when en.`type` = 'DEPT'
+                        then "/board/notice/department/view.hs?boardId="
+                    when en.`type` = 'COMPANY'
+                        then "/board/notice/company/view.hs?boardId="
+                    when en.`type` = 'GROUP'
+                        then "/board/notice/group/view.hs?boardId="
+                    when en.`type` = 'WORK'
+                        then "/work/mywork/detail.hs?id="
+                    when en.`type` = 'DAYWORK'
+                        then "/work/mydaywork/detail.hs?id="
+                    when en.`type` = 'TRANS'
+                        then "/translation/locationtran.hs?"
+                    when en.`type` = 'PROJECT'
+                        then "/project/project/dayproject.hs?pjId="
+                    when en.`type` = 'DAYPROJECT'
+                        then "/project/project/dayproject.hs?pjId="
+                    when en.`type` = 'DAYPROJECTITEM'
+                        then "/project/project/dayproject.hs?pjId="
+                    when en.`type` = 'APPROVAL_TRANSLATE'
+                        then "/approval/translate/wait/update.hs?approvalId="
+                    when en.`type` = 'APPROVAL_TRANSLATE_CONFIRM'
+                        then "/approval/translate/confirm/update.hs?approvalId="
+                    when en.`type` = 'APPROVAL_CONFIRM'
+                        then "/approval/wait/waiting/detail.hs?approvalId="
+                    when en.`type` = 'APPROVAL_FINISH'
+                        then "/approval/finish/detail.hs?approvalId="
+                    when en.`type` = 'APPROVAL_CANCEL'
+                        then "/approval/cancel/detail.hs?approvalId="
+                END AS LINK
+               , case
+                   when enr.status = 'Y'
+                       then "Y"
+                   else
+                       "N"
+               end as html_str_open
+               , en.message as content
+               , ed.emp_name AS EMP_NAME
+               , ed.dept_level_vertical_name AS DEPT_LEVEL_NAME
+               , ed.position_name AS POSITION_NAME
+            FROM event_notice en
+            JOIN event_notice_receiver enr ON enr.event_notice_id = en.event_notice_id and enr.use_yn = 'Y' and enr.emp_cd = #{empCd}
+            JOIN emp_detail ed ON ed.emp_cd = en.emp_cd AND ed.lang_cd = #{langCd}
+            ) result where 1=1
+        ]]>
+
+        <if test="dateSql != null &amp;&amp; dateSql !=''">
+            <![CDATA[  ${dateSql}  ]]>
+        </if>
+
+        <if test="inputSearchSql != null &amp;&amp; inputSearchSql !=''">
+            <![CDATA[  ${inputSearchSql}  ]]>
+        </if>
+        <![CDATA[
+          	order by ${str}
+            LIMIT #{recordsPerPage} OFFSET #{startRow}
+        ]]>
+    </select>
+
+    <select id="selectCountAllNotice" parameterType="hashmap" resultType="int">
+        <![CDATA[
+        select count(*) sum_row from(
+        select * from  (
+            SELECT en.*, ed.emp_name, ed.position_name
+            FROM event_notice en
+            JOIN event_notice_receiver enr ON enr.event_notice_id = en.event_notice_id and enr.use_yn = 'Y' and enr.emp_cd = #{empCd}
+            LEFT JOIN board b ON b.board_id = en.notice_cd
+            JOIN emp_detail ed ON ed.emp_cd = en.emp_cd AND ed.lang_cd = #{langCd}
+        ) resultcount where 1=1
+        ]]>
+        <if test="dateSql != null &amp;&amp; dateSql !=''">
+            <![CDATA[  ${dateSql}  ]]>
+        </if>
+        <if test="inputSearchSql != null &amp;&amp; inputSearchSql !=''">
+            <![CDATA[  ${inputSearchSql}  ]]>
+        </if>
+        <![CDATA[
+        ) resultCount
+          ]]>
+    </select>
+
+    <select id="sumNotice" parameterType="hashmap" resultType="int">
+        <![CDATA[
+        SELECT COUNT(*)FROM event_notice_receiver enr
+        WHERE enr.use_yn = 'Y'
+          and enr.emp_cd = #{empCd}
+          and enr.status = 'N'
+        ]]>
+    </select>
+
+    <select id="selectCountNotice" parameterType="hashmap" resultType="INT">
+        select count(*)
+        from EVENT_NOTICE
+        where EVENT_NOTICE_ID = #{eventNoticeCd}
+        and status like "%+"#{empCd_}"+%"
+    </select>
+
+    <update id = "readNotificationReceiver" parameterType="hashmap">
+        UPDATE event_notice_receiver
+        SET STATUS = 'Y'
+        WHERE event_notice_receiver_id in (SELECT EVENT_NOTICE_RECEIVER_ID FROM event_notice_receiver
+                                          WHERE EVENT_NOTICE_ID in (SELECT EVENT_NOTICE_ID
+                                                                   FROM event_notice
+                                                                   WHERE notice_cd = #{noticeCd}
+                                                                   AND TYPE = #{type})
+                                          AND EMP_CD = #{empCd})
+    </update>
+
+    <update id = "readPageNotificationReceiver" parameterType="hashmap">
+        UPDATE event_notice_receiver SET STATUS = 'Y'
+        WHERE emp_cd = #{empCd}
+        AND event_notice_id in ${listNoticeCd}
+    </update>
+    <update id = "readAllNotificationReceiver" parameterType="String">
+        UPDATE event_notice_receiver SET STATUS = 'Y'
+        WHERE emp_cd = #{empCd}
+        AND use_yn = 'Y'
+        AND STATUS = 'N'
+    </update>
+
+    <insert id="insertOne" parameterType="kr.co.hs.common.dto.NoticeDTO" useGeneratedKeys="true" keyProperty="eventNoticeId" keyColumn="EVENT_NOTICE_ID">
+        INSERT INTO EVENT_NOTICE (NOTICE_CD, EMP_CD, MESSAGE, TYPE, TIME_UP)
+        VALUES (#{noticeCd}, #{empCd}, #{message}, #{type}, NOW())
+    </insert>
+</mapper>

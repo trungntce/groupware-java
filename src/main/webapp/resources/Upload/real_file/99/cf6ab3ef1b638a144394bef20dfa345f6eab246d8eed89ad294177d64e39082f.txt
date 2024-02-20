@@ -1,0 +1,32 @@
+declare @Nam int
+declare @Thang int
+declare @Ngay int
+declare @gio int
+declare @phut int
+declare @giay int
+declare @miligiay int
+
+declare @thoigian datetime
+
+set @Nam=2018
+set @Thang=6
+set @Ngay=1
+set @gio=7
+set @phut=0
+set @giay=0
+set @miligiay=0
+set @thoigian=DATETIMEFROMPARTS(@Nam,@Thang,@Ngay,@gio,@phut,@giay,@miligiay)
+
+
+select IdHangHoa,Ton as TonThangTruoc from(
+select Date,IdHangHoa,TonNeuNhap as Ton from LichSuNhap where Date <@thoigian
+union 
+select Date,IdHangHoa,TonNeuXuat as Ton from LichSuXuat where Date <@thoigian
+) k
+
+where Date in (select max(Date) from (select Date,IdHangHoa,TonNeuNhap as Ton from LichSuNhap where Date <@thoigian
+union 
+select Date,IdHangHoa,TonNeuXuat as Ton from LichSuXuat where Date <@thoigian) t group by IdHangHoa) group by IdHangHoa,Ton
+
+
+

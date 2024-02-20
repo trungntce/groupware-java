@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//ibatis.apache.org//DTD Mapper 3.0//EN" "http://ibatis.apache.org/dtd/ibatis-3-mapper.dtd">
+
+<mapper namespace="ManagementMenuRole">
+
+
+    <select id="selectRoleList" parameterType="String" resultType="kr.co.hs.menuauthen.dto.ManagementMenuDTO">
+        <![CDATA[
+            SELECT
+                        POSITION_CD
+                    ,   GET_POSITION_NAME(POSITION_CD, 'KO') AS POSITION_NAME
+            FROM POSITION
+        ]]>
+    </select>
+    <select id="selectMenuRoleList" parameterType="String" resultType="kr.co.hs.menuauthen.dto.ManagementMenuDTO">
+        <![CDATA[
+            SELECT *
+            FROM MENU_ROLE MR WHERE USE_YN = 'Y'
+        ]]>
+    </select>
+
+    <update id="updateMenuRoleY" parameterType="kr.co.hs.management.dto.ManagementEmpDTO">
+        <![CDATA[
+            UPDATE MENU_AUTH SET USE_YN = 'Y'
+		    WHERE
+		    EMP_CD = #{empCd}
+		    AND
+		    MENU_CD IN (
+					SELECT MENU_CD
+					FROM POSITION_MENU
+					WHERE POSITION_LEVEL = (SELECT POSITION_LEVEL FROM POSITION WHERE POSITION_CD = #{positionCd})
+					AND USE_YN = 'Y'
+					)
+        ]]>
+    </update>
+
+
+    <update id="updateMenuRoleN" parameterType="kr.co.hs.management.dto.ManagementEmpDTO">
+        <![CDATA[
+            UPDATE MENU_AUTH SET USE_YN = 'N'
+		    WHERE
+		    EMP_CD = #{empCd}
+		    AND
+		    MENU_CD IN (
+					SELECT MENU_CD
+					FROM POSITION_MENU
+					WHERE POSITION_LEVEL = (SELECT POSITION_LEVEL FROM POSITION WHERE POSITION_CD = #{positionCd})
+					AND USE_YN = 'N'
+					)
+        ]]>
+    </update>
+
+    <update id="updateCustom" parameterType="kr.co.hs.management.dto.ManagementEmpDTO">
+        <![CDATA[
+            UPDATE MENU_AUTH set USE_YN = 'Y'
+            WHERE EMP_CD = #{empCd}
+            AND MENU_CD in (${menuStr})
+        ]]>
+    </update>
+    <update id="updateCustomN" parameterType="kr.co.hs.management.dto.ManagementEmpDTO">
+        <![CDATA[
+            UPDATE MENU_AUTH set USE_YN = 'N'
+            WHERE EMP_CD = #{empCd}
+            AND MENU_CD not in (${menuStr})
+        ]]>
+    </update>
+
+    <select id="selectNameMenuList" parameterType="kr.co.hs.menuauthen.dto.ManagementMenuDTO" resultType="kr.co.hs.menuauthen.dto.ManagementMenuDTO">
+            SELECT
+                  MENU_AUTH.EMP_CD
+                , GET_EMP_NAME(MENU_AUTH.EMP_CD, #{langCd}) as EMP_NAME
+                , MENU_AUTH.menu_cd
+                , GET_MENU_NAME(MENU_AUTH.MENU_CD, #{langCd}) as MENU_NAME
+                , MENU_AUTH.USE_YN
+            FROM MENU_AUTH
+            LEFT JOIN MENU ON MENU_AUTH.menu_cd = MENU.MENU_CD
+            WHERE MENU_AUTH.EMP_CD = #{empCd}
+            AND MENU.USE_YN = 'Y'
+<!--            <if test="translationYn != null &amp;&amp; translationYn == 'N'"> AND MENU.MENU_CD NOT IN (59, 66) </if>-->
+    </select>
+    <update id = "updateTranslationRole" parameterType="hashmap">
+        <![CDATA[
+        update menu_auth set use_yn = 'N'
+        where emp_cd in (${param})
+          and menu_cd not in (select m.menu_cd from menu m
+                                                        join position_menu pm on pm.menu_cd = m.menu_cd
+            and pm.position_level = 1200
+            and pm.use_yn = 'Y'
+                              where m.use_yn = 'Y'
+                              union all
+                              select menu_cd from menu
+                              where menu_cd in (46,47)
+                                and use_yn = 'Y');
+
+        update menu_auth set use_yn = 'Y'
+        where emp_cd in (${param})
+          and menu_cd in (select m.menu_cd from menu m
+                                                    join position_menu pm on pm.menu_cd = m.menu_cd
+            and pm.position_level = 1200
+            and pm.use_yn = 'Y'
+                          where m.use_yn = 'Y'
+                          union all
+                          select menu_cd from menu
+                          where menu_cd in (46,47)
+                            and use_yn = 'Y');
+        ]]>
+    </update>
+</mapper>

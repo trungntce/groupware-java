@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//ibatis.apache.org//DTD Mapper 3.0//EN" "http://ibatis.apache.org/dtd/ibatis-3-mapper.dtd">
+
+<mapper namespace="sboard">
+    <select id="getTreeOfBoard" parameterType="int" resultType="kr.co.hs.deptconfig.dto.DeptDTO">
+     <![CDATA[
+        select dept_cd
+        from (WITH RECURSIVE p AS (
+            SELECT dept_cd, dept_parent_cd, dept_level
+            FROM dept
+            WHERE dept_cd = (SELECT DEPT_CD FROM EMP WHERE EMP_CD = #{empCd})
+            UNION
+            SELECT c.dept_cd, c.dept_parent_cd, c.dept_level
+            FROM dept AS c,
+                 p
+            WHERE p.dept_parent_cd = c.dept_cd)
+              SELECT dept_cd, dept_level
+              FROM p
+             ) a
+        order by dept_level asc
+        ]]>
+    </select>
+
+
+    <select id="getmainboard" parameterType="hashmap" resultType="kr.co.hs.sboard.dto.SBoardMainDTO">
+        <![CDATA[
+        SELECT mb.*, dmt.name_dmt, dmt.id_board_type
+        FROM tb_board_main as mb
+                 JOIN tb_board_dmt as dmt ON mb.id_dmt = dmt.id
+        WHERE ${param}
+          AND mb.use_yn = 'Y'
+        ORDER BY mb.id desc
+        ]]>
+    </select>
+
+    <select id="getmainDMT" parameterType="hashmap" resultType="kr.co.hs.sboard.dto.SBoardDmtDTO">
+        <![CDATA[
+        SELECT *
+        FROM tb_board_dmt
+        WHERE ${param}
+        ORDER BY id desc
+        ]]>
+    </select>
+    <select id="getBoardTypeTopic" resultType="kr.co.hs.sboard.dto.SBoardTypeDTO">
+        <![CDATA[
+        SELECT *
+        FROM tb_board_type
+        ]]>
+    </select>
+
+    <insert id="addTbDmt" parameterType="kr.co.hs.sboard.dto.SBoardDmtDTO">
+        INSERT INTO tb_board_dmt(name_dmt, id_board_type, team, dept, company, GENERAL, create_date)
+        VALUES (#{nameDmt}, #{idBoardType}, #{team}, #{dept}, #{company}, #{general}, NOW())
+    </insert>
+
+    <select id="getstyle" parameterType="int" resultType="int">
+        <![CDATA[
+        SELECT id_board_type
+        FROM tb_board_dmt
+        WHERE id = #{id}
+        ]]>
+    </select>
+    <select id="getnamedmt" parameterType="int" resultType="String">
+        <![CDATA[
+        SELECT name_dmt
+        FROM tb_board_dmt
+        WHERE id = #{id}
+        ]]>
+    </select>
+
+    <insert id="addmain" parameterType="kr.co.hs.sboard.dto.SBoardMainDTO">
+        INSERT INTO tb_board_main
+        ( id_dmt
+        , title
+        , img_cover
+        , content
+        , link1
+        , link2
+        , attach_file
+        , start_date
+        , end_date
+        , view_count
+        , id_comment
+        , create_by
+        , create_date
+        , modify_date
+        , use_yn)
+        VALUES ( #{idDmt}
+               , #{title}
+               , #{imgCover}
+               , #{content}
+               , #{link1}
+               , #{link2}
+               , #{attachFile}
+               , #{startDate}
+               , #{endDate}
+               , #{viewCount}
+               , #{idComment}
+               , #{createBy}
+               , now()
+               , now()
+               , 'Y')
+    </insert>
+
+    <select id="getDetail" parameterType="int" resultType="kr.co.hs.sboard.dto.SBoardMainDTO">
+        <![CDATA[
+        SELECT m.*, dmt.name_dmt, dmt.id_board_type
+        FROM tb_board_main m
+                 JOIN tb_board_dmt dmt ON m.id_dmt = dmt.id
+        WHERE m.id = #{id}
+          AND m.use_yn = 'Y'
+        ]]>
+    </select>
+
+    <update id="updateSBoard" parameterType="kr.co.hs.sboard.dto.SBoardMainDTO">
+        <![CDATA[
+        UPDATE tb_board_main
+        SET title=#{title},
+            CONTENT=#{content},
+            attach_file=#{attachFile},
+            link1=#{link1},
+            link2=#{link2},
+            start_date=#{startDate},
+            end_date=#{endDate},
+            modify_date=NOW()
+        WHERE id = #{id}
+        ]]>
+    </update>
+
+    <update id="deleteSBoard" parameterType="int">
+        <![CDATA[
+        UPDATE tb_board_main
+        SET use_yn='N'
+        WHERE id = #{id}
+        ]]>
+    </update>
+
+    <select id="getComment" parameterType="hashmap" resultType="kr.co.hs.sboard.dto.SBoardCommentDTO">
+        <![CDATA[
+        SELECT cm.*, GET_EMP_NAME(cm.id_emp, #{langCd}) AS emp_name
+        FROM tb_board_comment as cm
+                 join emp ON cm.id_emp = emp.emp_cd
+                 JOIN tb_board_main m ON cm.id_board_main = m.id
+        WHERE cm.id_board_main = #{id}
+        ]]>
+    </select>
+    <insert id="addComment" parameterType="kr.co.hs.sboard.dto.SBoardCommentDTO">
+        INSERT INTO tb_board_comment(id_emp, id_board_main, content_comment, create_date, modify_date)
+        VALUES (#{idEmp}, #{idBoardMain}, #{contentComment}, NOW(), NOW())
+    </insert>
+
+    <delete id="deleteComment" parameterType="int">
+        <![CDATA[
+        DELETE FROM tb_board_comment WHERE id=#{id}
+        ]]>
+    </delete>
+
+
+</mapper>

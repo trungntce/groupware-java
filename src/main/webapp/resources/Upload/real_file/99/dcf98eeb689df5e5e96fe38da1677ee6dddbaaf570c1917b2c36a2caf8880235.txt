@@ -1,0 +1,93 @@
+USE [QuanLyNhapXuat111]
+GO
+/****** Object:  StoredProcedure [dbo].[Noi_In_Out_Hang]    Script Date: 06/18/2018 1:55:39 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER PROCEDURE [dbo].[Noi_In_Out_Hang]
+		@Thang int,
+		@Nam int
+	
+AS
+BEGIN
+	declare @ThangTruoc int
+	declare @NamTruoc int
+
+	
+
+	if(@Thang = 1)
+	begin
+		set @NamTruoc=@Nam -1; 
+		set @ThangTruoc = 12;
+	end
+	else
+	begin
+		set @NamTruoc=@Nam;
+		set @ThangTruoc = @Thang-1;
+
+	end
+
+	select id,CodeHang,TenHang,DonVi,TonThangTruoc,TongInput,TongOutput,TonThangTruoc+TongInput-TongOutput TonThucTe from(
+	select id,CodeHang,TenHang,DonVi,isnull(TonThangTruoc,0) as TonThangTruoc,isnull(TongInput,0) as TongInput,isnull(TongOutput,0) as TongOutput,TonThangTruoc+TongInput-TongOutput as TonThucTe from HangHoa h left join (select t.Id as idbang1,sum(t.SoLuong) TongInput from  (select HangHoa.Id,HangHoa.CodeHang,HangHoa.TenHang,
+DonVi,LichSuNhap.SoLuong,TonThucTe from HangHoa 
+inner join LichSuNhap on HangHoa.Id= LichSuNhap.IdHangHoa where MONTH(Date)=@Thang and YEAR(DATE)=@Nam) t
+group by t.Id,t.CodeHang,t.TenHang,t.DonVi,t.TonThucTe) input on input.idbang1=h.id
+
+left join (select k.Id as idbang2,sum(k.SoLuong) TongOutput from  (select HangHoa.Id,HangHoa.CodeHang,HangHoa.TenHang,
+DonVi,LichSuXuat.SoLuong,TonThucTe from HangHoa 
+inner join LichSuXuat on HangHoa.Id= LichSuXuat.IdHangHoa where MONTH(Date)=@Thang and YEAR(DATE)=@Nam) k
+group by k.Id,k.CodeHang,k.TenHang,k.DonVi,k.TonThucTe ) outd on  outd.idbang2=h.Id
+
+left join (select ReportThang.IdHangHoa,LichSuTon as TonThangTruoc from ReportThang inner join
+(select IdHangHoa,MAX(Thang) Thang,Nam  from ReportThang where Thang <=@ThangTruoc and Nam=@NamTruoc group by IdHangHoa,Nam) k
+on ReportThang.Thang = k.Thang and ReportThang.IdHangHoa=k.IdHangHoa and ReportThang.Nam=k.Nam) rep on rep.IdHangHoa=h.Id
+) pp
+order by id desc
+
+
+END
+
+
+
+
+
+
+
+
+//sdadadssad
+
+
+
+select IdHangHoa,Ton from(
+
+
+select Date,IdHangHoa,TonNeuNhap as Ton from LichSuNhap where Date <'2018/6/18'
+union 
+select Date,IdHangHoa,TonNeuXuat as Ton from LichSuXuat where Date <'2018/6/18'
+) k
+
+where Date in (select max(Date) from (select Date,IdHangHoa,TonNeuNhap as Ton from LichSuNhap where Date <'2018/6/18'
+union 
+select Date,IdHangHoa,TonNeuXuat as Ton from LichSuXuat where Date <'2018/6/18') t group by IdHangHoa) group by IdHangHoa,Ton
+
+
+select Date,IdHangHoa,TonNeuNhap as Ton from LichSuNhap where Date <'2018/6/18'
+union 
+select Date,IdHangHoa,TonNeuXuat as Ton from LichSuXuat where Date <'2018/6/18'
+
+
+declare @thoigian datetime
+
+set @thoigian='2018-12-2 01:02:03'
+print @thoigian
+
+
+
+
+
+
+
+
+
+

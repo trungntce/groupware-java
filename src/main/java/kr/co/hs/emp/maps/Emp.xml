@@ -1,0 +1,578 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//ibatis.apache.org//DTD Mapper 3.0//EN" "http://ibatis.apache.org/dtd/ibatis-3-mapper.dtd">
+
+<mapper namespace="Emp">
+
+    <select id="selectEmp" parameterType="String" resultType="kr.co.hs.emp.dto.EmpDTO">
+        SELECT E.*
+        FROM EMP E
+        WHERE EMP_ID = #{userId}
+          AND USE_YN = 'Y'
+          AND STATUS != 3
+          AND EMP_PARENT_CD IS NULL
+    </select>
+
+    <select id="selectEmpByEmpCd" resultType="kr.co.hs.emp.dto.EmpDTO">
+        SELECT E.*
+        FROM EMP E
+        WHERE EMP_CD = #{empCd}
+        AND USE_YN = 'Y'
+        AND STATUS != 3
+        AND EMP_PARENT_CD IS NULL
+    </select>
+
+    <select id="selectList" parameterType="kr.co.hs.emp.dto.EmpDTO" resultType="kr.co.hs.emp.dto.EmpDTO">
+        SELECT E.*
+        FROM EMP E
+        WHERE USE_YN = 'Y' AND STATUS != 3
+        <if test="translationYn != null &amp;&amp; translationYn != ''"> AND TRANSLATION_YN = #{translationYn} </if>
+        <if test="translationAdminYn != null &amp;&amp; translationAdminYn != ''"> AND TRANSLATION_ADMIN_YN = #{translationAdminYn} </if>
+    </select>
+
+    <select id="selectEmpList" parameterType="hashmap" resultType="kr.co.hs.emp.dto.EmpDTO">
+        <![CDATA[
+        SELECT
+        ROW_NUMBER() OVER (ORDER BY emp.emp_cd asc) AS ROWNUM,
+        EMP_CD
+        , EMP_PARENT_CD
+        , DEPT_CD
+        , GET_DEPT_LEVEL_NAME(DEPT_CD, #{langCd}) AS DEPT_NAME
+        , EMP.POSITION_CD
+        , GET_POSITION_NAME(EMP.POSITION_CD, #{langCd}) AS POSITION_NAME
+        , EMP_ID
+        , EMP_PW
+        , GET_EMP_NAME(EMP_CD, #{langCd}) AS EMP_NAME
+        , ADDR
+        , ADDR_DETAIL
+        , ZIP_CD
+        , TEL
+        , PHONE
+        , ID_NUM
+        , BIRTH_DAY
+        , MAIL
+        , ZALO_ID
+        , TRANSLATION_YN
+        , ADMIN_YN
+        , GUBUN
+        , STATUS
+        , DATE_FORMAT(ENTER_DATE, '%Y-%m-%d') AS ENTER_DATE
+        , MEMO
+        , emp.USE_YN
+        , EMP.TRANSLATION_ADMIN_YN
+        FROM EMP
+        left JOIN position p ON emp.position_cd = p.position_cd
+        WHERE EMP.USE_YN = 'Y'
+          and emp_parent_cd is null
+        ]]>
+        <if test=' adminYnPara=="N" '>
+            <![CDATA[
+                and dept_cd IN
+                (
+                    SELECT *
+                    FROM (
+                    SELECT dept_cd
+                    FROM emp
+                    WHERE emp_cd = #{empCd}
+                    UNION ALL
+                    select dept_cd
+                    from (select * from dept order by dept_parent_cd, dept_cd) dept,
+                    (select @pv := (SELECT dept_cd FROM emp WHERE emp_cd=#{empCd})) initialisation
+                    where find_in_set(dept_parent_cd, @pv) > 0
+                    and @pv := concat(@pv, ',', dept_cd)
+                    ) as noi
+                )
+                AND p.position_level >= (SELECT P1.position_level
+                    FROM emp E1
+                    JOIN position P1 ON E1.position_cd = P1.position_cd
+                    WHERE E1.emp_cd = #{empCd})
+            ]]>
+        </if>
+        <if test="deptSearch != null &amp;&amp; deptSearch !=''">
+            <![CDATA[    AND GET_DEPT_LEVEL_NAME(dept_cd, #{langCd}) LIKE CONCAT('%',#{deptSearch},'%' )  ]]>
+        </if>
+
+        <if test="inputSearchSql != null &amp;&amp; inputSearchSql !=''">
+            <![CDATA[  ${inputSearchSql}  ]]>
+        </if>
+        <![CDATA[
+                ORDER BY ${str}
+                LIMIT #{recordsPerPage} OFFSET #{startRow}
+            ]]>
+    </select>
+    <select id="sumRowsEmp" parameterType="hashmap" resultType="int">
+        <![CDATA[
+            SELECT count(*) sum_row
+            FROM EMP
+            left JOIN position p ON emp.position_cd = p.position_cd
+            WHERE EMP.USE_YN = 'Y' and emp_parent_cd is null
+         ]]>
+        <if test='adminYnPara=="N" '>
+          <![CDATA[
+                and dept_cd IN
+                (
+                    SELECT *
+                    FROM (
+                    SELECT dept_cd
+                    FROM emp
+                    WHERE emp_cd = #{empCd}
+                    UNION ALL
+                    select dept_cd
+                    from (select * from dept order by dept_parent_cd, dept_cd) dept,
+                    (select @pv := (SELECT dept_cd FROM emp WHERE emp_cd=#{empCd})) initialisation
+                    where find_in_set(dept_parent_cd, @pv) > 0
+                    and @pv := concat(@pv, ',', dept_cd)
+                    ) as noi
+                )
+                AND p.position_level >= (SELECT P1.position_level
+                    FROM emp E1
+                    JOIN position P1 ON E1.position_cd = P1.position_cd
+                    WHERE E1.emp_cd = #{empCd}
+                )
+          ]]>
+        </if>
+        <if test="deptSearch != null &amp;&amp; deptSearch !=''">
+            <![CDATA[    AND GET_DEPT_LEVEL_NAME(dept_cd, #{langCd}) LIKE CONCAT('%',#{deptSearch},'%' )  ]]>
+        </if>
+
+        <if test="inputSearchSql != null &amp;&amp; inputSearchSql !=''">
+            <![CDATA[  ${inputSearchSql}  ]]>
+        </if>
+
+    </select>
+
+    <select id="GetProfile" parameterType="hashmap" resultType="kr.co.hs.emp.dto.EmpDTO">
+        SELECT EMP_CD
+             , EMP_PARENT_CD
+             , DEPT_CD
+             , GET_DEPT_LEVEL_NAME(DEPT_CD, #{langCd})   AS DEPT_NAME
+             , POSITION_CD
+             , GET_POSITION_NAME(POSITION_CD, #{langCd}) AS POSITION_NAME
+             , EMP_ID
+             , EMP_PW
+             , GET_EMP_NAME(EMP_CD, #{langCd})           AS EMP_NAME
+             , CONCAT('[',GET_DEPT_NAME (DEPT_CD, #{langCd}),']', ' - ', GET_EMP_NAME(EMP_CD, #{langCd})) AS EMP_DEPT_NAME
+             , ADDR
+             , ADDR_DETAIL
+             , ZIP_CD
+             , TEL
+             , PHONE
+             , ID_NUM
+             , BIRTH_DAY
+             , MAIL
+             , ZALO_ID
+             , TRANSLATION_YN
+             , ADMIN_YN
+             , GUBUN
+             , STATUS
+             , DATE_FORMAT(ENTER_DATE, '%Y-%m-%d')       AS ENTER_DATE
+             , MEMO
+             , E.USE_YN
+             , GET_CODE_NAME(c.c_code_id, #{langCd}) as emp_status
+             , GET_CODE_NAME(g.c_code_id, #{langCd}) as emp_type
+             , E.TRANSLATION_ADMIN_YN
+        FROM EMP E
+        join c_code c on E.status = c.c_code_value
+        join c_code g on E.gubun = g.c_code_value
+        WHERE E.USE_YN = 'Y'
+          and EMP_CD = #{empCd}
+          and c.c_code='workstatus'
+          and g.c_code='worktype'
+    </select>
+
+    <select id="GetAllProfile" parameterType="hashmap" resultType="kr.co.hs.emp.dto.EmpDTO">
+        SELECT EMP_CD
+             , EMP_PARENT_CD
+             , DEPT_CD
+             , GET_DEPT_LEVEL_NAME(DEPT_CD, #{langCd})   AS DEPT_NAME
+             , POSITION_CD
+             , GET_POSITION_NAME(POSITION_CD, #{langCd}) AS POSITION_NAME
+             , EMP_ID
+             , EMP_PW
+             , GET_EMP_NAME(EMP_CD, #{langCd})           AS EMP_NAME
+             , ADDR
+             , ADDR_DETAIL
+             , ZIP_CD
+             , TEL
+             , PHONE
+             , ID_NUM
+             , BIRTH_DAY
+             , MAIL
+             , ZALO_ID
+             , TRANSLATION_YN
+             , ADMIN_YN
+             , GUBUN
+             , STATUS
+             , DATE_FORMAT(ENTER_DATE, '%Y-%m-%d')       AS ENTER_DATE
+             , MEMO
+             , E.USE_YN
+             , GET_CODE_NAME(c.c_code_id, #{langCd}) as emp_status
+             , GET_CODE_NAME(g.c_code_id, #{langCd}) as emp_type
+             , ACCOUNTING_YN
+            , E.TRANSLATION_ADMIN_YN
+        FROM EMP E
+                 join c_code c on E.status = c.c_code_value
+                 join c_code g on E.gubun = g.c_code_value
+        WHERE E.USE_YN = 'Y'
+          and EMP_CD = #{empCd}
+          and c.c_code='workstatus'
+          and g.c_code='worktype'
+        UNION ALL
+        SELECT EMP_CD
+             , EMP_PARENT_CD
+             , DEPT_CD
+             , GET_DEPT_LEVEL_NAME(DEPT_CD, #{langCd})   AS DEPT_NAME
+             , POSITION_CD
+             , GET_POSITION_NAME(POSITION_CD, #{langCd}) AS POSITION_NAME
+             , EMP_ID
+             , EMP_PW
+             , GET_EMP_NAME(EMP_CD, #{langCd})           AS EMP_NAME
+             , ADDR
+             , ADDR_DETAIL
+             , ZIP_CD
+             , TEL
+             , PHONE
+             , ID_NUM
+             , BIRTH_DAY
+             , MAIL
+             , ZALO_ID
+             , TRANSLATION_YN
+             , ADMIN_YN
+             , GUBUN
+             , STATUS
+             , DATE_FORMAT(ENTER_DATE, '%Y-%m-%d')       AS ENTER_DATE
+             , MEMO
+             , E.USE_YN
+             , GET_CODE_NAME(c.c_code_id, #{langCd}) as emp_status
+             , GET_CODE_NAME(g.c_code_id, #{langCd}) as emp_type
+             , ACCOUNTING_YN
+            , E.TRANSLATION_ADMIN_YN
+        FROM EMP E
+                 join c_code c on E.status = c.c_code_value
+                 join c_code g on E.gubun = g.c_code_value
+        WHERE E.USE_YN = 'Y'
+          and EMP_PARENT_CD = #{empCd}
+          and c.c_code='workstatus'
+          and g.c_code='worktype'
+        group by emp_cd
+    </select>
+
+    <select id="GetSubProfile" parameterType="hashmap" resultType="kr.co.hs.emp.dto.EmpDTO">
+        SELECT EMP_CD
+             , EMP_PARENT_CD
+             , DEPT_CD
+             , GET_DEPT_LEVEL_NAME(DEPT_CD, #{langCd})   AS DEPT_NAME
+             , POSITION_CD
+             , GET_POSITION_NAME(POSITION_CD, #{langCd}) AS POSITION_NAME
+             , EMP_ID
+             , EMP_PW
+             , GET_EMP_NAME(EMP_CD, #{langCd})           AS EMP_NAME
+             , ADDR
+             , ADDR_DETAIL
+             , ZIP_CD
+             , TEL
+             , PHONE
+             , ID_NUM
+             , BIRTH_DAY
+             , MAIL
+             , ZALO_ID
+             , TRANSLATION_YN
+             , ADMIN_YN
+             , GUBUN
+             , STATUS
+             , DATE_FORMAT(ENTER_DATE, '%Y-%m-%d')       AS ENTER_DATE
+             , MEMO
+             , E.USE_YN
+             , GET_CODE_NAME(c.c_code_id, #{langCd}) as emp_status
+             , GET_CODE_NAME(g.c_code_id, #{langCd}) as emp_type
+        FROM EMP E
+                 join c_code c on E.status = c.c_code_value
+                 join c_code g on E.gubun = g.c_code_value
+        WHERE E.USE_YN = 'Y'
+          and EMP_PARENT_CD = #{empCd}
+          and c.c_code='workstatus'
+          and g.c_code='worktype'
+    </select>
+
+    <select id="selectEmpUserList" parameterType="String" resultType="kr.co.hs.emp.dto.EmpDTO">
+        SELECT E.*
+        FROM EMP E
+        WHERE EMP_ID = #{userId}
+          AND USE_YN = 'Y'
+    </select>
+
+    <select id="selectEmpAuthList" parameterType="kr.co.hs.emp.dto.EmpDTO" resultType="kr.co.hs.emp.dto.EmpDTO">
+        SELECT emp_id
+             , CONCAT('[',GET_DEPT_NAME (DEPT_CD, #{langCd}),']', ' - ', GET_EMP_NAME(EMP_CD, #{langCd})) AS EMP_NAME
+             , EMP_CD
+             , ADMIN_YN
+             , TRANSLATION_YN
+        FROM HSGW.EMP
+        WHERE EMP_CD = (SELECT EMP_PARENT_CD FROM HSGW.EMP WHERE EMP_ID = #{empId})
+          AND USE_YN = 'Y'
+
+        UNION ALL
+        SELECT emp_id
+             , CONCAT('[',GET_DEPT_NAME (DEPT_CD, #{langCd}),']', ' - ', GET_EMP_NAME(EMP_CD, #{langCd})) AS EMP_NAME
+             , EMP_CD
+             , ADMIN_YN
+             , TRANSLATION_YN
+        FROM EMP
+        WHERE USE_YN = 'y'
+        AND EMP_PARENT_CD IN (SELECT EMP_PARENT_CD
+                                FROM HSGW.EMP
+                                WHERE EMP_ID = #{empId}
+                                   OR EMP_PARENT_CD = (SELECT EMP_CD FROM HSGW.EMP WHERE EMP_ID = #{empId}) AND use_yn = 'Y')
+           OR EMP_CD = (SELECT EMP_CD FROM HSGW.EMP WHERE EMP_ID = #{empId} AND USE_YN = 'Y')
+
+    </select>
+
+    <select id="selectDeptChangeHistoryId" parameterType="kr.co.hs.emp.dto.EmpDTO" resultType="int">
+        SELECT max(dept_change_history_id)
+        FROM hsgw.dept_change_history
+        where dept_cd = #{deptCd}
+    </select>
+
+    <update id="deleteEmp" parameterType="int">
+        <![CDATA[
+        update emp
+        set use_yn='N'
+        where emp_cd = #{empCd}
+        ]]>
+    </update>
+
+    <insert id="InsertEmp" parameterType="kr.co.hs.emp.dto.EmpDTO">
+        INSERT INTO emp
+        ( emp_parent_cd
+        , dept_cd, position_cd
+        , select_lang_cd, emp_id, emp_pw
+        , emp_name, addr
+        , addr_detail, zip_cd
+        , tel, phone, id_num
+        , birth_day
+        , mail, zalo_id, translation_yn, admin_yn
+        , gubun, status
+        , enter_date, memo
+        , use_yn, accounting_yn)
+        VALUES (#{empParentCd}, #{deptCd}, #{positionCd}, #{LangCd}, #{empId}, #{empPw}, #{empName}, #{addr}, #{addrDetail}
+                   , #{zipCd}, #{tel}, #{phone}, #{idNum}, #{birthDay}, #{mail}, #{zaloId}, #{translationYn},
+                #{adminYn},
+                #{gubun}, #{status}, #{enterDate}, null, 'Y', #{accountingYn})
+    </insert>
+
+    <select id="checkExist" parameterType="String" resultType="int">
+        select count(*) as sl
+        from emp
+        where emp_id = #{empId}
+    </select>
+
+    <select id="checkEmpExist" parameterType="kr.co.hs.emp.dto.EmpDTO" resultType="int">
+        select count(*) as sl
+        from emp
+        where emp_id = #{empId}
+        and emp_name LIKE CONCAT('%',#{empName},'%' )
+        and mail = #{mail}
+    </select>
+
+    <select id="checkEmpPassword" parameterType="String" resultType="int">
+        select count(*) as sl
+        from emp
+        where emp_pw = #{oldEmpPw}
+    </select>
+
+    <select id="getEdit" parameterType="String" resultType="kr.co.hs.emp.dto.EmpDTO">
+        SELECT *
+        FROM EMP
+        WHERE USE_YN = 'Y'
+          and EMP_CD = #{empCd}
+    </select>
+
+    <select id="getCountParent" parameterType="String" resultType="int">
+        SELECT count(*)
+        FROM EMP
+        WHERE EMP_PARENT_CD = #{empCd}
+    </select>
+
+    <update id="updateEmp" parameterType="kr.co.hs.emp.dto.EmpDTO">
+        <![CDATA[
+        UPDATE emp
+        SET emp_parent_cd  = #{empParentCd}
+          , dept_cd        = #{deptCd}
+          , position_cd    = #{positionCd}
+          , select_lang_cd = #{LangCd}
+        ]]>
+        <if test="empPw != null &amp;&amp; empPw !=''">
+            , emp_pw = #{empPw}
+        </if>
+        <![CDATA[
+          , emp_name       = #{empName}
+          , addr           = #{addr}
+          , addr_detail    = #{addrDetail}
+          , zip_cd         = #{zipCd}
+          , tel            = #{tel}
+          , phone          = #{phone}
+          , id_num         = #{idNum}
+          , birth_day      = #{birthDay}
+          , mail           = #{mail}
+          , zalo_id        = #{zaloId}
+          , translation_yn = #{translationYn}
+          , admin_yn       = #{adminYn}
+          , gubun          = #{gubun}
+          , status         = #{status}
+          , enter_date     = #{enterDate}
+          , memo           = #{memo}
+          , accounting_yn  = #{accountingYn}
+        WHERE emp_cd = #{empCd}
+        ]]>
+    </update>
+
+    <select id="checkExitParentEmp" parameterType="kr.co.hs.emp.dto.EmpDTO" resultType="kr.co.hs.emp.dto.EmpDTO">
+        SELECT * FROM emp WHERE emp_cd = #{empCd}
+    </select>
+
+    <select id="selectPW" parameterType="String" resultType="kr.co.hs.emp.dto.EmpDTO">
+        SELECT EMP_PW
+        FROM EMP
+        WHERE EMP_ID = #{empId}
+    </select>
+
+    <select id="selectInformation" parameterType="String" resultType="kr.co.hs.emp.dto.EmpDTO">
+        SELECT *
+        FROM EMP
+        WHERE EMP_ID = #{empId}
+    </select>
+
+    <update id="deleteEmpByRequest" parameterType="hashmap">
+        update emp
+        set use_yn='N'
+        WHERE ${param}
+    </update>
+
+    <update id="updateEmpPassword" parameterType="kr.co.hs.emp.dto.EmpDTO">
+        update emp set
+        emp_pw = #{empPw}
+        WHERE emp_id = #{empId}
+    </update>
+    <select id="getemplistbycustomid" parameterType="hashmap" resultType="kr.co.hs.emp.dto.EmpDTO">
+        <![CDATA[
+        SELECT
+            CONCAT(GET_EMP_NAME(EMP_CD, #{langCd}),'(',GET_POSITION_NAME(POSITION_CD, #{langCd}),')') AS EMP_NAME
+        FROM emp
+        WHERE
+            emp_cd IN ${empList};
+        ]]>
+    </select>
+
+    <select id = "selectEmpWithDept" parameterType="kr.co.hs.emp.dto.EmpDTO" resultType="kr.co.hs.emp.dto.EmpDTO">
+        <![CDATA[
+
+        SELECT CONCAT(GET_EMP_NAME(e.emp_cd, #{langCd}), ' - ',GET_DEPT_LEVEL_HORIZONTALITY_NAME(e.dept_cd, #{langCd})) as emp_name,
+        result.DEPT_CD, result.DEPT_PARENT_CD
+        FROM (
+                 WITH RECURSIVE CTE AS
+                                    (
+                                        SELECT DEPT_CD
+                                             , DEPT_NAME
+                                             , DEPT_PARENT_CD
+                                             , 1 AS DEPT_LEVEL
+                                             , SORT
+                                             , CONVERT(DEPT_CD, CHAR(100)) AS PATH
+                                        FROM DEPT
+                                        WHERE DEPT_PARENT_CD = 1
+                                        UNION ALL
+                                        SELECT A.DEPT_CD
+                                             , A.DEPT_NAME
+                                             , A.DEPT_PARENT_CD
+                                             , B.DEPT_LEVEL + 1
+                                             , A.SORT
+                                             , CONCAT(B.PATH, '-', A.DEPT_CD)
+                                        FROM DEPT AS A
+                                                 INNER JOIN CTE AS B ON A.DEPT_PARENT_CD = B.DEPT_CD
+                                    )
+
+                 SELECT DEPT_CD
+                      , GET_DEPT_LEVEL_HORIZONTALITY_NAME(DEPT_CD, #{langCd}) AS DEPT_NAME
+                      , DEPT_PARENT_CD
+                      , DEPT_LEVEL
+                      , SORT
+                      , PATH FROM CTE WHERE DEPT_LEVEL <= 4
+                 UNION ALL
+                 SELECT DEPT_CD
+                      , GET_DEPT_LEVEL_HORIZONTALITY_NAME(DEPT_CD, #{langCd}) AS DEPT_NAME
+                      , DEPT_PARENT_CD
+                      , DEPT_LEVEL
+                      , SORT
+                      , '1' AS PATH
+                 FROM DEPT T1
+                 WHERE T1.DEPT_CD = 1
+                 ORDER BY PATH ASC
+             ) result
+                 JOIN emp e ON e.dept_cd = result.dept_cd AND e.emp_parent_cd IS NULL AND e.use_yn = 'Y'
+        ]]>
+    </select>
+
+    <select id = "selectEmpWithDeptAccounting" parameterType="kr.co.hs.emp.dto.EmpDTO" resultType="kr.co.hs.emp.dto.EmpDTO">
+        <![CDATA[
+
+        SELECT CONCAT(GET_EMP_NAME(e.emp_cd, #{langCd}), ' - ',GET_DEPT_LEVEL_HORIZONTALITY_NAME(e.dept_cd, #{langCd})) as emp_name
+        FROM (
+                 WITH RECURSIVE CTE AS
+                                    (
+                                        SELECT DEPT_CD
+                                             , DEPT_NAME
+                                             , DEPT_PARENT_CD
+                                             , 1 AS DEPT_LEVEL
+                                             , SORT
+                                             , CONVERT(DEPT_CD, CHAR(100)) AS PATH
+                                        FROM DEPT
+                                        WHERE DEPT_PARENT_CD = 1
+                                        UNION ALL
+                                        SELECT A.DEPT_CD
+                                             , A.DEPT_NAME
+                                             , A.DEPT_PARENT_CD
+                                             , B.DEPT_LEVEL + 1
+                                             , A.SORT
+                                             , CONCAT(B.PATH, '-', A.DEPT_CD)
+                                        FROM DEPT AS A
+                                                 INNER JOIN CTE AS B ON A.DEPT_PARENT_CD = B.DEPT_CD
+                                    )
+
+                 SELECT DEPT_CD
+                      , GET_DEPT_LEVEL_HORIZONTALITY_NAME(DEPT_CD, #{langCd}) AS DEPT_NAME
+                      , DEPT_PARENT_CD
+                      , DEPT_LEVEL
+                      , SORT
+                      , PATH FROM CTE WHERE DEPT_LEVEL <= 4
+                 UNION ALL
+                 SELECT DEPT_CD
+                      , GET_DEPT_LEVEL_HORIZONTALITY_NAME(DEPT_CD, #{langCd}) AS DEPT_NAME
+                      , DEPT_PARENT_CD
+                      , DEPT_LEVEL
+                      , SORT
+                      , '1' AS PATH
+                 FROM DEPT T1
+                 WHERE T1.DEPT_CD = 1
+                 ORDER BY PATH ASC
+             ) result
+                 JOIN emp e ON e.dept_cd = result.dept_cd AND e.accounting_yn = 'Y' AND e.emp_parent_cd IS NULL AND e.use_yn = 'Y'
+        ]]>
+    </select>
+
+    <select id = "findLeaderName" parameterType="kr.co.hs.emp.dto.EmpDTO" resultType="int">
+        SELECT emp_cd FROM(
+                                SELECT CONCAT(GET_EMP_NAME(e.emp_cd, #{langCd}), ' - ',GET_DEPT_LEVEL_HORIZONTALITY_NAME(e.dept_cd, #{langCd})) as emp_name
+                                     , emp_cd
+                                FROM emp e
+                                WHERE e.emp_parent_cd IS NULL
+                                  AND use_yn = 'Y') result
+        WHERE emp_name = #{empName}
+    </select>
+
+    <select id="selectEmpDeptName" parameterType="kr.co.hs.emp.dto.EmpDTO" resultType="kr.co.hs.emp.dto.EmpDTO">
+        <![CDATA[
+            SELECT CONCAT(GET_EMP_NAME(e.emp_cd, #{langCd}), ' - ',GET_DEPT_LEVEL_HORIZONTALITY_NAME(e.dept_cd, #{langCd})) as emp_name, emp_cd
+            FROM emp e
+            WHERE e.emp_cd = #{empCd}
+        ]]>
+    </select>
+
+</mapper>

@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//ibatis.apache.org//DTD Mapper 3.0//EN" "http://ibatis.apache.org/dtd/ibatis-3-mapper.dtd">
+
+<mapper namespace="ApprovalForm">
+    <select id="selectApprovalForm" parameterType="kr.co.hs.approval.dto.ApprovalFormSearchDTO"
+            resultType="kr.co.hs.approval.dto.ApprovalFormDTO">
+        SELECT
+                  FORM_ID
+                , FORM_NAME
+                , FORM_CONTENTS
+                , USE_YN
+                , CREATE_DATE
+                , CREATE_ID
+        FROM
+            APPROVAL_FORM
+        WHERE
+            USE_YN = 'Y'
+
+        <if test="formName != null &amp;&amp; formName !=''">
+            AND FORM_NAME = #{formName}
+        </if>
+        <if test="createId != null &amp;&amp; createId !=''">
+            AND CREATE_ID = #{createId}
+        </if>
+        <if test="startDate != null &amp;&amp; startDate !=''">
+            <![CDATA[
+                AND CREATE_DATE >= #{startDate}
+            ]]>
+        </if>
+        <if test="endDate != null &amp;&amp; endDate !=''">
+            <![CDATA[
+				AND CREATE_DATE <= #{endDate}
+			]]>
+        </if>
+
+        LIMIT #{start}, #{limit}
+    </select>
+
+    <select id="selectAll" resultType="kr.co.hs.approval.dto.ApprovalFormDTO">
+        SELECT
+            FORM_ID
+            , FORM_NAME
+            , FORM_CONTENTS
+            , USE_YN
+            , CREATE_DATE
+            , CREATE_ID
+        FROM
+            APPROVAL_FORM
+    </select>
+
+    <select id="count" parameterType="kr.co.hs.approval.dto.ApprovalFormSearchDTO" resultType="java.lang.Integer">
+        SELECT COUNT(FORM_ID)
+        FROM APPROVAL_FORM
+        <if test="formName != null &amp;&amp; formName !=''"> AND FORM_NAME = #{formName} </if>
+    </select>
+
+    <select id="selectList" parameterType="kr.co.hs.approval.dto.ApprovalFormSearchDTO" resultType="kr.co.hs.approval.dto.ApprovalFormDTO">
+        SELECT
+            FORM_ID
+            , FORM_NAME
+            , FORM_CONTENTS
+            , USE_YN
+            , CREATE_DATE
+            , CREATE_ID
+        FROM
+            APPROVAL_FORM
+        WHERE 1
+        <if test="formName != null &amp;&amp; formName !=''"> AND FORM_NAME = #{formName} </if>
+        <if test="keywordType != null &amp;&amp; keywordType !='' &amp;&amp; keyword != null &amp;&amp; keyword !=''">
+            AND ${keywordType} LIKE CONCAT('%',#{keyword},'%' )
+        </if>
+        <if test="startDate != null &amp;&amp; startDate !=''">
+            <![CDATA[ AND DATE_FORMAT(#{startDate}, '%y-%m-%d') <= DATE_FORMAT(CREATE_DATE, '%y-%m-%d')  ]]>
+        </if>
+        <if test="endDate != null &amp;&amp; endDate !=''">
+            <![CDATA[ AND DATE_FORMAT(CREATE_DATE, '%y-%m-%d') <= DATE_FORMAT(#{endDate}, '%y-%m-%d') ]]>
+        </if>
+        <choose>
+            <when test="orderByColumn != null &amp;&amp; orderByColumn != ''"> ORDER BY ${orderByColumn} ${orderByType} </when>
+            <otherwise> ORDER BY  CREATE_DATE DESC </otherwise>
+        </choose>
+        LIMIT #{start}, #{limit}
+    </select>
+
+    <select id="selectOne" parameterType="kr.co.hs.approval.dto.ApprovalFormSearchDTO" resultType="kr.co.hs.approval.dto.ApprovalFormDTO">
+        SELECT FORM_ID
+        , FORM_NAME
+        , FORM_CONTENTS
+        , USE_YN
+        , CREATE_DATE
+        , CREATE_ID
+        FROM APPROVAL_FORM
+        WHERE FORM_ID = ${formId}
+    </select>
+
+    <insert id="insertOne" parameterType="kr.co.hs.approval.dto.ApprovalFormDTO" >
+        INSERT INTO APPROVAL_FORM
+        (
+                FORM_NAME
+            ,	FORM_CONTENTS
+            ,	USE_YN
+            ,	CREATE_ID
+        )
+        VALUES
+        (
+              #{formName}
+            , #{formContents}
+            , 'Y'
+            , #{createId}
+        )
+    </insert>
+
+    <update id="updateOne" parameterType="kr.co.hs.approval.dto.ApprovalFormDTO">
+        UPDATE APPROVAL_FORM
+            SET
+                FORM_NAME = #{formName}
+                , FORM_CONTENTS = #{formContents}
+                , USE_YN = #{useYn}
+        WHERE
+            FORM_ID = #{formId}
+
+    </update>
+
+
+</mapper>
